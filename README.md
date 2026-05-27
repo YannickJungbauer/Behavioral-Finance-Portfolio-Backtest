@@ -1,196 +1,57 @@
 # Behavioral Finance Portfolio Backtest
 
-Dieses Repository enthält ausschließlich den R-Code zur empirischen Analyse der
+Dieses Repository enthält die Code-, Daten- und Ergebnisdateien zur
 Bachelorarbeit **„Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out 
 im Asset Management
-“**. Die zugehörigen
-Excel-Daten, Ergebnisdateien, Grafiken und PDF-Exports werden aus
-Lizenz-, Speicher- und Reproduzierbarkeitsgründen nicht versioniert.
+“**. Der empirische
+Teil vergleicht klassische und verhaltensorientierte Portfoliomodelle auf Basis
+historischer S&P-500-Daten.
 
-Der Code vergleicht klassische und verhaltensorientierte Portfoliomodelle auf
-Basis historischer S&P-500-Daten. Im Mittelpunkt stehen die Behavioral-Finance-
-Komponenten **Fear of Loss (FOL)** und **Fear of Missing Out (FOMO)**.
+Im Mittelpunkt stehen die Behavioral-Finance-Komponenten **Fear of Loss (FOL)**
+und **Fear of Missing Out (FOMO)**. Der Code führt den Backtest durch, erzeugt
+Out-of-Sample-Renditen, berechnet Performance- und Risikokennzahlen und erstellt
+Excel-Auswertungen, Grafiken sowie ein Sammel-PDF.
 
-## Repository-Inhalt
-
-Im Git-Repository sollen nur folgende Dateien liegen:
+## Repository-Struktur
 
 ```text
 .
 ├── Modellvergleich.R
 ├── Auswertung Ergebnisse Modellvergleich.R
+├── S&P_500_Daten.xlsx
+├── Backtest_Ergebnisse.xlsx
+├── Backtest_Auswertung.xlsx
+├── Backtest_Charts.pdf
 ├── README.md
-└── .gitignore
+└── Plots/
+    ├── 01_Equity_Curves.png
+    ├── 02_Drawdown.png
+    ├── 03_Rolling_Volatility.png
+    ├── 04_Annual_Returns.png
+    ├── 05_Metrics_Heatmap.png
+    ├── 06_Krise_Boom.png
+    ├── 07_Konzentration_EffN.png
+    ├── 08_Konzentration_AnzPos.png
+    ├── 09_Top10_Holdings.png
+    ├── 10_Skew_Semi_Scatter.png
+    ├── 11_Renditeverteilungen.png
+    ├── 12_Sharpe_vs_Sortino.png
+    ├── 13_Outperformance.png
+    ├── 14_Korrelationsmatrix.png
+    └── 15_Krise_Boom_Bars.png
 ```
 
-Nicht Bestandteil des Repositorys sind insbesondere:
+## Dateiübersicht
 
-- `S&P_500_Daten.xlsx`
-- `Backtest_Ergebnisse.xlsx`
-- `Backtest_Auswertung.xlsx`
-- `Backtest_Charts.pdf`
-- der Ordner `Plots/`
-- Word-, PowerPoint-, PDF-, CSV- und sonstige Arbeitsdateien
-
-Diese Dateien werden lokal benötigt oder lokal erzeugt, aber nicht in Git
-gespeichert.
-
-## Skripte
-
-| Datei | Zweck |
+| Datei | Inhalt |
 | --- | --- |
 | `Modellvergleich.R` | Hauptskript für Datenimport, Portfoliooptimierung, Backtest, Benchmark-Download und Export der Roh-Ergebnisse. |
 | `Auswertung Ergebnisse Modellvergleich.R` | Auswertungsskript für Kennzahlen, Tabellen, Grafiken, Excel-Bericht und Sammel-PDF. |
-
-## Lokale Dateien
-
-Damit der Code ausgeführt werden kann, muss die Eingabedatei lokal vorhanden
-sein:
-
-```text
-S&P_500_Daten.xlsx
-```
-
-Diese Datei wird nicht mitversioniert. Sie muss vor dem Start von
-`Modellvergleich.R` im lokalen Arbeitsordner liegen oder der Pfad `BASE_PATH`
-im Skript muss entsprechend angepasst werden.
-
-Nach der Ausführung entstehen lokal folgende Dateien:
-
-```text
-Backtest_Ergebnisse.xlsx
-Backtest_Auswertung.xlsx
-Backtest_Charts.pdf
-Plots/*.png
-```
-
-Auch diese Outputs bleiben außerhalb von Git.
-
-## Datenbeschaffung
-
-Die Rohdaten werden nicht im Repository bereitgestellt. Wer den Code
-reproduzieren möchte, muss die Datei `S&P_500_Daten.xlsx` selbst erzeugen.
-In der Bachelorarbeit wurden die Einzeltiteldaten über Datastream/LSEG bezogen.
-
-Verwendet wurden:
-
-- historische S&P-500-Einzeltitel bzw. das für die Analyse definierte
-  S&P-500-Universum
-- tägliche Return-Index-Zeitreihen (`RI`) je Aktie
-- zusätzliche statische Felder zur Kontrolle bzw. Dokumentation:
-  - `RI`: Return Index
-  - `MV`: Market Value
-  - `UP`: Price bzw. Unadjusted Price
-  - `VO`: Volume
-- jährliche Rebalancing-Listen für 2016 bis 2026
-- S&P 500 Total Return Index als Benchmark; dieser wird im Code separat über
-  `quantmod` von Yahoo Finance als `^SP500TR` geladen
-
-Der wichtigste Input für den Backtest ist der Datastream-Return-Index (`RI`),
-weil daraus die diskreten Tagesrenditen berechnet werden:
-
-```text
-R_t = RI_t / RI_{t-1} - 1
-```
-
-Für die erste Rebalancing-Periode 2016 werden mindestens zwei Jahre Historie
-benötigt. Die Daten sollten deshalb mindestens bis Anfang 2014 zurückreichen
-und bis zum Ende des Untersuchungszeitraums laufen.
-
-## Aufbau der lokalen Datendatei
-
-Der Code erwartet lokal eine Excel-Datei mit dem Namen:
-
-```text
-S&P_500_Daten.xlsx
-```
-
-Diese Datei muss im lokalen `BASE_PATH` liegen oder der Pfad im Skript
-`Modellvergleich.R` muss angepasst werden.
-
-### Sheet `S&P500`
-
-Das Hauptsheet enthält die täglichen Return-Index-Zeitreihen der Aktien. Der
-Code liest das Sheet in zwei Schritten ein: zuerst die Namen aus Zeile 1, danach
-die Daten ab Zeile 6.
-
-Erwarteter Aufbau:
-
-```text
-Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
-Zeile 2:  "RI" in Spalte A, letzter RI-Wert je Aktie ab B
-Zeile 3:  "MV" in Spalte A, letzter MV-Wert je Aktie ab B
-Zeile 4:  "UP" in Spalte A, letzter UP-Wert je Aktie ab B
-Zeile 5:  "VO" in Spalte A, letztes Volumen je Aktie ab B
-Zeile 6+: Datum in Spalte A, tägliche RI-Zeitreihe je Aktie ab B
-```
-
-Wichtig ist, dass die Spaltenreihenfolge der Aktien in diesem Sheet konsistent
-bleibt. Die Werte ab Zeile 6 werden vom Skript als numerische RI-Zeitreihe
-interpretiert.
-
-### Sheets `Rebalancing YYYY`
-
-Zusätzlich erwartet der Code je Jahr ein Rebalancing-Sheet:
-
-```text
-Rebalancing 2016
-Rebalancing 2017
-...
-Rebalancing 2026
-```
-
-Diese Sheets dienen dazu, das investierbare Universum am jeweiligen
-Rebalancing-Stichtag zu bestimmen.
-
-Erwarteter Aufbau:
-
-```text
-Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
-Zeile 4:  Jahresendpreis bzw. gültiger Preis je Aktie ab B
-```
-
-Der Code liest aus jedem Rebalancing-Sheet die Ticker aus Zeile 1 und die
-Jahresendpreise aus Zeile 4. Ein gültiger Preis bedeutet, dass der Titel für
-das betreffende Jahr als investierbar berücksichtigt werden kann. Fehlende
-Preise werden als nicht investierbar interpretiert.
-
-Zusätzlich filtert der Code später nochmals nach Datenqualität:
-
-- mindestens `MIN_HISTORY_DAYS = 504` gültige Handelstage vor dem
-  Rebalancing-Stichtag
-- höchstens `MAX_NA_SHARE = 5 %` fehlende Werte im jüngsten Historienfenster
-- keine vollständig fehlenden oder praktisch konstanten Renditereihen
-
-Dadurch wird verhindert, dass Aktien mit zu kurzer Historie oder instabiler
-Datenlage in die Optimierung eingehen.
-
-## Nachvollziehbarer Datenworkflow
-
-Der Datenworkflow war:
-
-1. Historisches S&P-500-Universum bzw. die verwendeten S&P-500-Titel für die
-   Analyse festlegen.
-2. Für alle Aktien tägliche Datastream-Return-Index-Reihen (`RI`) für den
-   gesamten Untersuchungszeitraum herunterladen.
-3. Zusätzlich `MV`, `UP` und `VO` als Kontroll-/Metafelder aus Datastream
-   exportieren.
-4. Die Daten in die beschriebene Excel-Struktur `S&P_500_Daten.xlsx`
-   übertragen.
-5. Für jedes Rebalancing-Jahr 2016 bis 2026 ein Sheet `Rebalancing YYYY`
-   anlegen.
-6. Im jeweiligen Rebalancing-Sheet nur für die am Stichtag investierbaren Titel
-   einen gültigen Preis hinterlegen; fehlende Preise bleiben `NA`.
-7. `Modellvergleich.R` ausführen. Das Skript berechnet aus den RI-Reihen die
-   Tagesrenditen, filtert das investierbare Universum und erzeugt lokal
-   `Backtest_Ergebnisse.xlsx`.
-8. `Auswertung Ergebnisse Modellvergleich.R` ausführen. Das Skript erstellt
-   daraus lokal die Ergebnisgrafiken, den Excel-Auswertungsbericht und das
-   Sammel-PDF.
-
-Da Datastream/LSEG-Daten lizenzpflichtig sein können, werden diese Rohdaten
-nicht veröffentlicht. Die genaue Datenstruktur ist jedoch dokumentiert, sodass
-die Datei mit einem eigenen Datenzugang reproduziert werden kann.
+| `S&P_500_Daten.xlsx` | Eingabedatei mit S&P-500-Einzeltiteldaten und Rebalancing-Sheets. |
+| `Backtest_Ergebnisse.xlsx` | Roh-Output des Backtests mit Out-of-Sample-Renditen, Metriken, Diagnostik und Portfolio-Gewichten. |
+| `Backtest_Auswertung.xlsx` | Präsentationsfertige Excel-Auswertung mit formatierten Tabellen und eingebetteten Grafiken. |
+| `Backtest_Charts.pdf` | Sammel-PDF mit den wichtigsten Ergebnisgrafiken. |
+| `Plots/` | Einzelne PNG-Grafiken der empirischen Auswertung. |
 
 ## Voraussetzungen
 
@@ -227,7 +88,84 @@ Rscript "Auswertung Ergebnisse Modellvergleich.R"
 
 Wichtig: In beiden Skripten ist `BASE_PATH` aktuell auf
 `F:/FH/Bachelorarbeit/` gesetzt. Wird das Repository an einen anderen Ort
-geklont, muss dieser Pfad im Setup-Block angepasst werden.
+kopiert oder geklont, muss dieser Pfad im Setup-Block der beiden Skripte
+angepasst werden.
+
+## Datengrundlage
+
+Die Datei `S&P_500_Daten.xlsx` enthält die für den Backtest verwendeten
+S&P-500-Einzeltiteldaten. Die Daten wurden über Datastream/LSEG bezogen und in
+eine für den Code lesbare Excel-Struktur gebracht.
+
+Verwendet wurden:
+
+- tägliche Return-Index-Zeitreihen (`RI`) je Aktie
+- zusätzliche Kontroll- und Metafelder:
+  - `RI`: Return Index
+  - `MV`: Market Value
+  - `UP`: Price bzw. Unadjusted Price
+  - `VO`: Volume
+- jährliche Rebalancing-Sheets für 2016 bis 2026
+- S&P 500 Total Return Index als Benchmark; dieser wird im Code über
+  `quantmod` von Yahoo Finance als `^SP500TR` geladen
+
+Der zentrale Input für die Renditeberechnung ist der Return Index:
+
+```text
+R_t = RI_t / RI_{t-1} - 1
+```
+
+## Aufbau der Datei `S&P_500_Daten.xlsx`
+
+### Sheet `S&P500`
+
+Das Hauptsheet enthält die täglichen Return-Index-Zeitreihen der Aktien.
+
+Erwarteter Aufbau:
+
+```text
+Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
+Zeile 2:  "RI" in Spalte A, letzter RI-Wert je Aktie ab B
+Zeile 3:  "MV" in Spalte A, letzter MV-Wert je Aktie ab B
+Zeile 4:  "UP" in Spalte A, letzter UP-Wert je Aktie ab B
+Zeile 5:  "VO" in Spalte A, letztes Volumen je Aktie ab B
+Zeile 6+: Datum in Spalte A, tägliche RI-Zeitreihe je Aktie ab B
+```
+
+Der Code liest zuerst die Spaltennamen aus Zeile 1 und anschließend die
+eigentlichen RI-Zeitreihen ab Zeile 6.
+
+### Sheets `Rebalancing YYYY`
+
+Zusätzlich enthält die Datei je Jahr ein Rebalancing-Sheet:
+
+```text
+Rebalancing 2016
+Rebalancing 2017
+...
+Rebalancing 2026
+```
+
+Diese Sheets werden genutzt, um das investierbare Universum zum jeweiligen
+Rebalancing-Stichtag zu bestimmen.
+
+Erwarteter Aufbau:
+
+```text
+Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
+Zeile 4:  Jahresendpreis bzw. gültiger Preis je Aktie ab B
+```
+
+Ein gültiger Preis bedeutet, dass der Titel im jeweiligen Jahr als investierbar
+berücksichtigt werden kann. Fehlende Preise werden als nicht investierbar
+interpretiert.
+
+Zusätzlich filtert der Code nach Datenqualität:
+
+- mindestens `MIN_HISTORY_DAYS = 504` gültige Handelstage vor dem
+  Rebalancing-Stichtag
+- höchstens `MAX_NA_SHARE = 5 %` fehlende Werte im jüngsten Historienfenster
+- keine vollständig fehlenden oder praktisch konstanten Renditereihen
 
 ## Backtest-Design
 
@@ -300,24 +238,28 @@ Hybrid = 50 % MaxSharpe + 50 % Behavioral
 Es dient dazu, die Forschungsfrage „ersetzen oder ergänzen“ empirisch
 nachvollziehbar zu beantworten.
 
-## Output
+## Ergebnisdateien
 
-`Modellvergleich.R` erzeugt lokal:
+`Modellvergleich.R` erzeugt bzw. aktualisiert:
 
 ```text
 Backtest_Ergebnisse.xlsx
 ```
 
-Diese Datei enthält unter anderem:
+Diese Datei enthält:
 
-- Out-of-Sample-Renditen
-- Gesamtmetriken
-- Krisen- und Boomphasenmetriken
-- Constraint-Diagnostik
-- Portfolio-Gewichte
-- Methoden-README
+- `README`
+- `Returns_OOS`
+- `Metrics_Overall`
+- `Metrics_Crisis_Corona`
+- `Metrics_Boom_Tech23`
+- `Diagnostics`
+- `Weights_MaxSharpe`
+- `Weights_Behavioral`
+- `Weights_Arnott`
+- `Weights_Hybrid`
 
-`Auswertung Ergebnisse Modellvergleich.R` erzeugt lokal:
+`Auswertung Ergebnisse Modellvergleich.R` erzeugt bzw. aktualisiert:
 
 ```text
 Backtest_Auswertung.xlsx
@@ -325,7 +267,9 @@ Backtest_Charts.pdf
 Plots/*.png
 ```
 
-Diese Ausgaben sind Ergebnisartefakte und werden nicht in Git gespeichert.
+Die Auswertungsdatei enthält 16 formatierte Sheets, darunter Executive Summary,
+Wertentwicklung, Risiko-Profil, Detailmetriken, Jahresrenditen, Teilperioden,
+Konzentrationsanalyse, Top-Holdings, Chart-Galerie und Gewichtungsmatrizen.
 
 ## Wichtige Limitationen
 
@@ -335,9 +279,10 @@ Diese Ausgaben sind Ergebnisartefakte und werden nicht in Git gespeichert.
 - Die Corona-Stressphase wird bewusst breiter als der reine Crash-Zeitraum
   definiert: 01.02.2020 bis 30.06.2020.
 - Ein möglicher Survivorship Bias wird nicht vollständig korrigiert, da die
-  lokale Datei `S&P_500_Daten.xlsx` als Datengrundlage verwendet wird.
+  Datei `S&P_500_Daten.xlsx` als Datengrundlage verwendet wird.
 - Die S&P-500-Einzeltiteldaten können lizenzrechtlichen Beschränkungen
-  unterliegen und werden deshalb nicht im Repository abgelegt.
+  unterliegen. Vor einer Veröffentlichung des Repositorys sollte geprüft
+  werden, ob die Daten mitveröffentlicht werden dürfen.
 
 ## Reproduzierbarkeit
 
@@ -349,19 +294,19 @@ Modell. Bei `FOMO_FOL_SOLVER = "auto"` gilt:
   `FOMO_FOL_DE_N_MAX` Titel enthält.
 - Bei größeren Universen wird Local Search mit derselben Zielfunktion genutzt.
 
-Die Solverwahl wird im Konsolenoutput und lokal im Sheet `README` der Datei
+Die Solverwahl wird im Konsolenoutput und im Sheet `README` der Datei
 `Backtest_Ergebnisse.xlsx` dokumentiert.
 
 ## Git-Hinweis
 
-Die Datei `.gitignore` ist so ausgelegt, dass Excel-Daten, Ergebnisexports,
-Grafiken, Office-Dateien, temporäre Render-Ordner und R-Arbeitsdateien nicht
-versehentlich versioniert werden. Das Repository bleibt dadurch ein reines
-Code-Repository.
+Die ursprünglichen Daten- und Ergebnisdateien sind in diesem Repository
+enthalten. Temporäre Dateien, R-Arbeitsdateien, Office-Lockdateien und lokale
+Render-Ordner sollten dagegen nicht versioniert werden.
 
 ## Autor
 
 Yannick Jungbauer  
 Bachelorarbeit: Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out 
 im Asset Management
+
 
