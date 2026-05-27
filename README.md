@@ -280,10 +280,7 @@ Konzentrationsanalyse, Top-Holdings, Chart-Galerie und Gewichtungsmatrizen.
   definiert: 01.02.2020 bis 30.06.2020.
 - Ein möglicher Survivorship Bias wird nicht vollständig korrigiert, da die
   Datei `S&P_500_Daten.xlsx` als Datengrundlage verwendet wird.
-- Die S&P-500-Einzeltiteldaten können lizenzrechtlichen Beschränkungen
-  unterliegen. Vor einer Veröffentlichung des Repositorys sollte geprüft
-  werden, ob die Daten mitveröffentlicht werden dürfen.
-
+  
 ## Reproduzierbarkeit
 
 Zur Reproduzierbarkeit wird im Hauptskript `set.seed(42)` gesetzt. Das betrifft
