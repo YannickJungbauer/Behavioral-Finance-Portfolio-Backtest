@@ -1,8 +1,10 @@
 # Behavioral Finance Portfolio Backtest
 
 Dieses Repository enthält ausschließlich den R-Code zur empirischen Analyse der
-Bachelorarbeit **„Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out im Asset Management“**. 
-Die zugehörigen Excel-Daten, Ergebnisdateien, Grafiken und PDF-Exports werden aus
+Bachelorarbeit **„Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out 
+im Asset Management
+“**. Die zugehörigen
+Excel-Daten, Ergebnisdateien, Grafiken und PDF-Exports werden aus
 Lizenz-, Speicher- und Reproduzierbarkeitsgründen nicht versioniert.
 
 Der Code vergleicht klassische und verhaltensorientierte Portfoliomodelle auf
