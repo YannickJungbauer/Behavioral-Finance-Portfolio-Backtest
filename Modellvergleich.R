@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 ################################################################################
 #                                                                              #
 #   BACHELORARBEIT: BEHAVIORAL PORTFOLIO OPTIMIZATION                          #
@@ -9,9 +10,9 @@
 #   Datum:   2026-04                                                           #
 #   R-Ver.:  >= 4.2.0                                                          #
 #                                                                              #
-#   Ausfuehrung:                                                               #
+#   Ausführung:                                                               #
 #     1) Datei S&P_500_Daten.xlsx in BASE_PATH ablegen                         #
-#     2) Skript komplett ausfuehren (source() oder Run-All)                    #
+#     2) Skript komplett ausführen (source() oder Run-All)                     #
 #     3) Ergebnisdatei wird in OUTPUT_PATH erzeugt                             #
 #                                                                              #
 ################################################################################
@@ -21,14 +22,14 @@
 # ==============================================================================
 
 ## ---- 1.1 Pakete -------------------------------------------------------------
-# Bei Erstausfuehrung ggf. installieren:
+# Bei Erstausführung ggf. installieren:
 # install.packages(c("readxl","xts","zoo","PerformanceAnalytics",
 #                    "quadprog","openxlsx","quantmod","DEoptim"))
 
 suppressPackageStartupMessages({
   library(readxl)              # Excel-Import
   library(xts)                 # Zeitreihen-Container
-  library(zoo)                 # Hilfsfunktionen fuer Zeitreihen
+  library(zoo)                 # Hilfsfunktionen für Zeitreihen
   library(PerformanceAnalytics)# Performance-Metriken
   library(openxlsx)            # Excel-Export (write.xlsx)
 })
@@ -61,22 +62,22 @@ REBAL_YEARS <- 2016:2025                 # Rebalancing-Stichtage (jeweils letzte
 OOS_START   <- as.Date("2017-01-01")     # Start der Out-of-Sample-Phase
 OOS_END     <- as.Date("2026-04-20")     # Ende der Out-of-Sample-Phase (= letzter Datenpunkt)
 
-# --- Risikofreie Rate (fuer Sharpe / Sortino) ---
-# Vereinfachung: konstant. Fuer zeitvariable rf -> TBill-Zeitreihe laden.
+# --- Risikofreie Rate (für Sharpe / Sortino) ---
+# Vereinfachung: konstant. Für zeitvariable rf -> TBill-Zeitreihe laden.
 RF_ANNUAL   <- 0.02                      # 2 % p.a.
 RF_DAILY    <- (1 + RF_ANNUAL)^(1/252) - 1
 
-# --- Universumsfilter (pragmatischer Datenverfuegbarkeitsfilter) ---
+# --- Universumsfilter (pragmatischer Datenverfügbarkeitsfilter) ---
 MIN_HISTORY_DAYS <- 504                  # min. 2 Jahre Historie vor Rebalancing-Datum
-MAX_NA_SHARE     <- 0.05                 # max. 5 % NAs im juengsten Historienfenster
+MAX_NA_SHARE     <- 0.05                 # max. 5 % NAs im jüngsten Historienfenster
 
 # --- Gemeinsame Portfolio-Constraints ---------------------------------------
-# Diese Restriktionen gelten fuer ALLE Modellportfolios. Damit wird im Backtest
+# Diese Restriktionen gelten für ALLE Modellportfolios. Damit wird im Backtest
 # nicht durch unterschiedliche Anlageregeln verzerrt. Long-only, voll
 # investiert, maximal 10 % pro Einzeltitel.
-# MIN_WEIGHT ist nur eine numerische Untergrenze fuer QP-/Projektionsschritte.
-# Oekonomisch wird kein Mindestgewicht erzwungen: sehr kleine Gewichte sind
-# praktisch Null und dienen nur der Solver-Stabilitaet.
+# MIN_WEIGHT ist nur eine numerische Untergrenze für QP-/Projektionsschritte.
+# Ökonomisch wird kein Mindestgewicht erzwungen: sehr kleine Gewichte sind
+# praktisch Null und dienen nur der Solver-Stabilität.
 MIN_WEIGHT <- 1e-6
 MAX_WEIGHT <- 0.10
 MIN_ASSETS_FOR_MAX_WEIGHT <- ceiling(1 / MAX_WEIGHT)
@@ -86,19 +87,19 @@ MIN_ASSETS_FOR_MAX_WEIGHT <- ceiling(1 / MAX_WEIGHT)
 #
 #   max_w  Skew(w) / SemiDev_0(w)
 #
-# FOMO wird ueber positive Portfolio-Schiefe (Fisher-Pearson, korrigiert)
-# operationalisiert. FOL wird ueber annualisierte Semideviation echter Verluste
-# unter 0 operationalisiert. Damit lautet die oekonomische Interpretation:
+# FOMO wird über positive Portfolio-Schiefe (Fisher-Pearson, korrigiert)
+# operationalisiert. FOL wird über annualisierte Semideviation echter Verluste
+# unter 0 operationalisiert. Damit lautet die ökonomische Interpretation:
 # "positive Schiefe pro Einheit Downside-Risiko".
 #
-# Die bekannten Stabilitaetsprobleme direkter Sample-Schiefe-Optimierung werden
+# Die bekannten Stabilitätsprobleme direkter Sample-Schiefe-Optimierung werden
 # nicht ausgeblendet, sondern bewusst in der Diskussion aufgegriffen. Der
-# Arnott-Blend bleibt deshalb zusaetzlich als Robustheitsmodell im Backtest.
+# Arnott-Blend bleibt deshalb zusätzlich als Robustheitsmodell im Backtest.
 # "DEoptim": DEoptim erzwingen (kann bei vollem S&P-500-Universum sehr lange dauern).
-# "auto": DEoptim bis FOMO_FOL_DE_N_MAX, darueber Local Search.
+# "auto": DEoptim bis FOMO_FOL_DE_N_MAX, darüber Local Search.
 # "local": immer Local Search mit gleicher Zielfunktion.
 FOMO_FOL_SOLVER        <- "auto"
-FOMO_FOL_DE_N_MAX      <- 120            # nur im auto-Modus: bis hier DEoptim, darueber Local Search
+FOMO_FOL_DE_N_MAX      <- 120            # nur im auto-Modus: bis hier DEoptim, darüber Local Search
 FOMO_FOL_DE_ITERMAX    <- 200
 FOMO_FOL_LOCAL_TRIALS  <- 2500
 FOMO_FOL_LOCAL_JITTER  <- 500
@@ -117,32 +118,32 @@ ARNOTT_ALPHA_MIN  <- 0.20
 ARNOTT_ALPHA_MAX  <- 0.80
 BEHAVIORAL_METHOD_NOTE <- paste(
   "Das Behavioral-Hauptmodell maximiert aktiv Skew(w)/SemiDev_0(w).",
-  "FOMO wird ueber korrigierte Fisher-Pearson-Schiefe gemessen, FOL ueber",
+  "FOMO wird über korrigierte Fisher-Pearson-Schiefe gemessen, FOL über",
   "annualisierte Semideviation unter 0. Der Arnott-Blend bleibt als",
-  "Robustheitsmodell fuer passives Schiefe-Harvesting enthalten."
+  "Robustheitsmodell für passives Schiefe-Harvesting enthalten."
 )
 SKEW_DISCUSSION_NOTE <- paste(
   "Direkte Sample-Schiefe-Optimierung bleibt tail-sensitiv und nicht-konvex.",
   "Wenn das aktive Behavioral-Modell konzentrierter ist, in Krisen schlechter",
-  "abschneidet oder MaxSharpe OOS eine hoehere Schiefe zeigt, ist das kein",
-  "Codefehler, sondern empirisches Material fuer die Diskussion zur Frage",
-  "'ersetzen oder ergaenzen'."
+  "abschneidet oder MaxSharpe OOS eine höhere Schiefe zeigt, ist das kein",
+  "Codefehler, sondern empirisches Material für die Diskussion zur Frage",
+  "'ersetzen oder ergänzen'."
 )
 
-# --- Hybrid-Ergaenzungslogik ------------------------------------------------
+# --- Hybrid-Ergänzungslogik -------------------------------------------------
 # Der Hybrid ist kein weiterer nichtlinearer Optimierer. Er kombiniert das
 # klassische MaxSharpe-Portfolio und das aktive Behavioral-Portfolio linear.
-# Damit bleibt die Forschungsfrage "ergaenzen" transparent interpretierbar.
+# Damit bleibt die Forschungsfrage "ergänzen" transparent interpretierbar.
 HYBRID_ALPHA <- 0.50                     # Anteil MaxSharpe im Hybrid-Blend
 
 cat("[Setup] Behavioral: aktive FOMO/FOL-Ratio max Skew(w)/SemiDev_0(w)\n")
 cat("[Setup] Solver:", FOMO_FOL_SOLVER,
-    "- DEoptim verfuegbar:", has_DEoptim, "\n")
+    "- DEoptim verfügbar:", has_DEoptim, "\n")
 if (tolower(FOMO_FOL_SOLVER) == "auto") {
   cat("[Setup] Auto-Schwelle: DEoptim bis n <=", FOMO_FOL_DE_N_MAX,
-      ", darueber Local Search\n")
+      ", darüber Local Search\n")
 } else if (tolower(FOMO_FOL_SOLVER) == "deoptim") {
-  cat("[Setup] DEoptim wird fuer Behavioral unabhaengig von der Universumsgroesse erzwungen\n")
+  cat("[Setup] DEoptim wird für Behavioral unabhängig von der Universumsgröße erzwungen\n")
 }
 cat(sprintf("[Setup] Arnott-alpha: %.2f * SemiDev_%dT / SemiDev_full, begrenzt auf [%.2f, %.2f]\n",
             ARNOTT_ALPHA_BASE, ARNOTT_RECENT_WINDOW_DAYS,
@@ -151,7 +152,7 @@ cat(sprintf("[Setup] Hybrid: %.0f%% MaxSharpe + %.0f%% Behavioral-FOMO/FOL\n",
             100 * HYBRID_ALPHA, 100 * (1 - HYBRID_ALPHA)))
 cat(sprintf("[Setup] Gemeinsame Constraints: long-only, voll investiert, max %.1f%% je Titel (MIN_WEIGHT %.6f nur numerisch)\n",
             100 * MAX_WEIGHT, MIN_WEIGHT))
-ES_ALPHA <- 0.95                         # Konfidenz fuer ES (wird fuer Metrik CVaR wiederverwendet)
+ES_ALPHA <- 0.95                         # Konfidenz für ES (wird für Metrik CVaR wiederverwendet)
 
 # --- Modell-Schalter ---
 # RUN_HYBRID = TRUE schaltet das Hybrid-Modell zu. Der Hybrid ist ein
@@ -159,7 +160,7 @@ ES_ALPHA <- 0.95                         # Konfidenz fuer ES (wird fuer Metrik C
 RUN_HYBRID <- TRUE
 
 # --- Krisen-/Boomphasen-Definitionen ---
-CRISIS_START  <- as.Date("2020-02-01")   # Corona-Stressphase: breiteres Fenster fuer robuste Tail-Metriken
+CRISIS_START  <- as.Date("2020-02-01")   # Corona-Stressphase: breiteres Fenster für robuste Tail-Metriken
 CRISIS_END    <- as.Date("2020-06-30")   # inkl. Crash und erste Erholungsphase
 BOOM_START    <- as.Date("2023-01-01")   # Tech-Rallye 2023 Start
 BOOM_END      <- as.Date("2023-12-31")   # Tech-Rallye 2023 Ende
@@ -213,10 +214,10 @@ cat("    -> Zeitraum:", as.character(start(RI)), "bis", as.character(end(RI)), "
 ## ---- 2.2 Historische Konstituenten-Listen -----------------------------------
 # Ein Sheet je Jahr: "Rebalancing YYYY". Struktur analog zum Hauptsheet,
 # jedoch nur EINE Datenzeile (= Jahresendpreis).
-# Wir nutzen fehlende Preise (NA) als Hinweis auf Nicht-Zugehoerigkeit;
+# Wir nutzen fehlende Preise (NA) als Hinweis auf Nicht-Zugehörigkeit;
 # Da in dieser Datei alle 503 Ticker in allen Rebal-Sheets vorhanden sind
-# (siehe Methodik-Hinweis in der Dokumentation), fungiert der tatsaechliche
-# Filter ueber den RI-Historien-Check (siehe Funktion get_universe() unten).
+# (siehe Methodik-Hinweis in der Dokumentation), fungiert der tatsächliche
+# Filter über den RI-Historien-Check (siehe Funktion get_universe() unten).
 
 cat("[2/7] Lade historische Konstituenten-Listen ...\n")
 
@@ -233,7 +234,7 @@ for (yr in 2016:2026) {
                      col_names = FALSE, .name_repair = "minimal")
   prices_yr <- suppressWarnings(as.numeric(row4[1, -1]))
   
-  # Nur Ticker mit gueltigem Preis behalten
+  # Nur Ticker mit gültigem Preis behalten
   valid <- !is.na(prices_yr) & !is.na(ticker_yr)
   constituent_list[[as.character(yr)]] <- ticker_yr[valid]
 }
@@ -255,9 +256,9 @@ cat("[3/7] Berechne diskrete Tagesrenditen ...\n")
 returns <- Return.calculate(RI, method = "discrete")
 returns <- returns[-1, ]  # erste Zeile ist komplett NA
 
-# Extreme Ausreisser abschneiden (ggf. Fehler in Datastream-Daten)
-# Wir begrenzen einzelne Tagesrenditen auf [-0.5, 2.0]; Werte ausserhalb
-# werden hier als Datastream-Ausreisser bzw. Datenfehler behandelt.
+# Extreme Ausreißer abschneiden (ggf. Fehler in Datastream-Daten)
+# Wir begrenzen einzelne Tagesrenditen auf [-0.5, 2.0]; Werte außerhalb
+# werden hier als Datastream-Ausreißer bzw. Datenfehler behandelt.
 returns_clean <- returns
 returns_clean[returns_clean < -0.5] <- NA
 returns_clean[returns_clean >  2.0] <- NA
@@ -268,16 +269,16 @@ cat("    -> Renditen-Matrix:", nrow(returns_clean), "Tage x", ncol(returns_clean
 ## ---- 3.2 Funktion: Universum zum Rebalancing-Zeitpunkt ----------------------
 # Kombination aus zwei Filtern:
 #   (a) Ticker muss im Rebalancing-Sheet des betreffenden Jahres mit
-#       gueltigem Preis enthalten sein.
+#       gültigem Preis enthalten sein.
 #   (b) Ticker muss mindestens MIN_HISTORY_DAYS Handelstage mit Daten vor
-#       dem Rebalancing-Datum haben und im juengsten Historienfenster hoechstens
+#       dem Rebalancing-Datum haben und im jüngsten Historienfenster höchstens
 #       MAX_NA_SHARE Lueckentage aufweisen.
 #
 # SURVIVORSHIP BIAS:
 # In dieser Skriptvariante wird bewusst die Datei S&P_500_Daten.xlsx verwendet.
 # Der Survivorship Bias wird damit NICHT methodisch korrigiert. Die Ergebnisse
 # sind daher als nicht-bias-korrigierter Modellvergleich zu interpretieren.
-# Fuer eine bias-korrigierte Variante muss DATA_PATH wieder auf
+# Für eine bias-korrigierte Variante muss DATA_PATH wieder auf
 # S&P_500_Daten_BIAS_KORRIGIERT.xlsx gesetzt und die Methodik entsprechend
 # dokumentiert werden.
 
@@ -285,15 +286,15 @@ get_universe <- function(rebal_date, returns_mat, constituents_year) {
   # Trainingsfenster = alles vor und inkl. rebal_date
   R_train <- returns_mat[index(returns_mat) <= rebal_date, , drop = FALSE]
   
-  # (a) Rebalancing-Sheet-Filter: nur Aktien mit gueltigem Preis im
+  # (a) Rebalancing-Sheet-Filter: nur Aktien mit gültigem Preis im
   # betreffenden Jahressheet.
   in_index <- colnames(R_train) %in% constituents_year
   
-  # (b) Historienfilter: mindestens MIN_HISTORY_DAYS gueltige Beobachtungen
+  # (b) Historienfilter: mindestens MIN_HISTORY_DAYS gültige Beobachtungen
   n_valid  <- colSums(!is.na(R_train))
   enough_history <- n_valid >= MIN_HISTORY_DAYS
   
-  # (c) NA-Anteil im juengsten Fenster (letzte MIN_HISTORY_DAYS Tage) unter Schwellwert
+  # (c) NA-Anteil im jüngsten Fenster (letzte MIN_HISTORY_DAYS Tage) unter Schwellwert
   recent_window <- tail(R_train, MIN_HISTORY_DAYS)
   na_share_recent <- colMeans(is.na(recent_window))
   not_too_many_na <- na_share_recent <= MAX_NA_SHARE
@@ -307,24 +308,24 @@ get_universe <- function(rebal_date, returns_mat, constituents_year) {
 # 4. OPTIMIERUNGS-FUNKTIONEN
 # ==============================================================================
 
-## ---- 4.1 Hilfsfunktion: bereinigtes Renditepanel fuer Optimierung -----------
+## ---- 4.1 Hilfsfunktion: bereinigtes Renditepanel für Optimierung ------------
 # WICHTIG: Wir filtern Ticker mit NAs im aktuellen Fenster AUS - nicht Zeilen.
-# Hintergrund: na.omit() auf einer (T x N)-Matrix wuerde jeden Tag verwerfen,
+# Hintergrund: na.omit() auf einer (T x N)-Matrix würde jeden Tag verwerfen,
 # an dem auch nur ein einziger Ticker keinen Wert hat (z. B. Meta vor IPO
-# 2012). Bei mehreren hundert Assets waere das ein Datenkiller - es bleibt ein
+# 2012). Bei mehreren hundert Assets wäre das ein Datenkiller - es bleibt ein
 # rank-defizientes Panel, das den MaxSharpe-QP in NaNs treibt und numerische
-# Optimierer mit Typ-Inkonsistenzen abwuergen kann. Loesung: Assets mit
-# Luecken raus, verbleibende
+# Optimierer mit Typ-Inkonsistenzen abwürgen kann. Lösung: Assets mit
+# Lücken raus, verbleibende
 # haben volle Historie. Das Universum schrumpft, die Kovarianz ist aber sauber.
 #
-# Zusaetzlich: Ticker mit Null-Varianz (konstante Zeitreihen, z. B. durch
-# Handels-Aussetzung, die als konstanter RI durchging) erzeugen eine singulaere
+# Zusätzlich: Ticker mit Null-Varianz (konstante Zeitreihen, z. B. durch
+# Handels-Aussetzung, die als konstanter RI durchging) erzeugen eine singuläre
 # Kovarianzmatrix und bringen quadprog zum Absturz mit dem Fehler
-# "Fehlender Wert, wo TRUE/FALSE noetig ist", weil Solver intern
+# "Fehlender Wert, wo TRUE/FALSE nötig ist", weil Solver intern
 # Nicht-Finitheit in der Kovarianzstruktur nicht robust behandeln.
 prep_returns <- function(R_xts, tickers) {
   R_sub <- R_xts[, tickers, drop = FALSE]
-  # (1) Ticker mit vollstaendiger Historie
+  # (1) Ticker mit vollständiger Historie
   complete_cols <- colSums(is.na(R_sub)) == 0
   R_sub <- R_sub[, complete_cols, drop = FALSE]
   if (ncol(R_sub) == 0) {
@@ -341,7 +342,7 @@ prep_returns <- function(R_xts, tickers) {
 }
 
 # Hilfsfunktion: Gewichte, die vom Optimizer auf einem reduzierten Universum
-# zurueckkommen, auf das gewuenschte Originaluniversum zurueckmappen (0-Padding).
+# zurückkommen, auf das gewünschte Originaluniversum zurückmappen (0-Padding).
 expand_weights <- function(w_reduced, full_tickers) {
   w_full <- setNames(rep(0, length(full_tickers)), full_tickers)
   common <- intersect(names(w_reduced), full_tickers)
@@ -461,7 +462,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
   n <- length(tickers_used)
   
   if (n * max_weight < 1) {
-    stop("zu wenige Ticker fuer max_weight-Constraint")
+    stop("zu wenige Ticker für max_weight-Constraint")
   }
   
   project_weights <- function(w) {
@@ -469,7 +470,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
   }
   
   # Zielfunktion: DEoptim und Local Search minimieren. Daher wird
-  # -Skew/SemiDev verwendet, was dem Maximieren des FOMO/FOL-Verhaeltnisses
+  # -Skew/SemiDev verwendet, was dem Maximieren des FOMO/FOL-Verhältnisses
   # entspricht. Bei negativer Schiefe wird eine stetige Penalty genutzt, damit
   # die Vorzeichenfalle vermieden wird und trotzdem nach niedrigem FOL-Risiko
   # gesucht werden kann.
@@ -529,7 +530,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
     best <- eval_candidate(rep(1 / n, n), best)
     
     # FOL-Anker und einige deterministische Top-k-Startpunkte geben der Suche
-    # sinnvolle Startwerte, bevor zufaellige Sparse-Kandidaten erzeugt werden.
+    # sinnvolle Startwerte, bevor zufällige Sparse-Kandidaten erzeugt werden.
     w_fol <- tryCatch(optimize_min_semicov(R_train_xts, tickers),
                       error = function(e) NULL)
     if (!is.null(w_fol)) {
@@ -582,7 +583,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
   
   if (solver_mode == "deoptim" && !has_DEoptim) {
     stop("FOMO_FOL_SOLVER verlangt DEoptim, aber das Paket ist in dieser ",
-         "R-Installation nicht verfuegbar. Installiere es mit ",
+         "R-Installation nicht verfügbar. Installiere es mit ",
          "install.packages('DEoptim') in genau dieser R-Version oder setze ",
          "FOMO_FOL_SOLVER <- 'local'. Aktuelle .libPaths(): ",
          paste(.libPaths(), collapse = " | "))
@@ -610,7 +611,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
   } else {
     if (solver_mode == "auto" && !has_DEoptim && n <= FOMO_FOL_DE_N_MAX) {
       message("      Hinweis: DEoptim ist in dieser R-Installation nicht ",
-              "verfuegbar; nutze Local Search mit gleicher Zielfunktion.")
+              "verfügbar; nutze Local Search mit gleicher Zielfunktion.")
     }
     w <- local_search()
   }
@@ -632,7 +633,7 @@ optimize_fomo_fol_ratio <- function(R_train_xts, tickers,
   if (any(w_full < -1e-8) ||
       any(w_full > max_weight + 1e-5) ||
       abs(sum(w_full) - 1) > 1e-5) {
-    stop("FOMO/FOL-Loesung verletzt gemeinsame Portfolio-Constraints")
+    stop("FOMO/FOL-Lösung verletzt gemeinsame Portfolio-Constraints")
   }
   
   w_full
@@ -643,7 +644,7 @@ optimize_behavioral_arnott <- function(R_train_xts, tickers) {
   R_mat        <- pr$R
   tickers_used <- pr$tickers
   if (length(tickers_used) < MIN_ASSETS_FOR_MAX_WEIGHT) {
-    stop("zu wenige Ticker fuer Arnott-Robustheitsportfolio")
+    stop("zu wenige Ticker für Arnott-Robustheitsportfolio")
   }
   
   # FOL-Schicht: defensiver Downside-Anker.
@@ -687,24 +688,24 @@ optimize_behavioral_arnott <- function(R_train_xts, tickers) {
   if (any(w < -1e-8) ||
       any(w > MAX_WEIGHT + 1e-5) ||
       abs(sum(w) - 1) > 1e-5) {
-    stop("Arnott-Robustheitsloesung verletzt gemeinsame Portfolio-Constraints")
+    stop("Arnott-Robustheitslösung verletzt gemeinsame Portfolio-Constraints")
   }
   
   w
 }
 
-# FOL-Ankerportfolio fuer Arnott und als Startwert der Behavioral-Suche.
+# FOL-Ankerportfolio für Arnott und als Startwert der Behavioral-Suche.
 # Exakte Portfolio-Target-Semivarianz mit pmin(R %*% w, 0)^2 ist ein
-# quadratisches Programm mit vielen Hilfsvariablen. Fuer ein robustes und
-# schnelles Bachelorarbeits-Setup nutzen wir die uebliche Downside-
-# Semicovariance-Naeherung: positive Asset-Renditen werden auf 0 gesetzt,
+# quadratisches Programm mit vielen Hilfsvariablen. Für ein robustes und
+# schnelles Bachelorarbeits-Setup nutzen wir die übliche Downside-
+# Semicovariance-Näherung: positive Asset-Renditen werden auf 0 gesetzt,
 # daraus wird eine Downside-Momentmatrix gebildet und per quadprog minimiert.
 optimize_min_semicov <- function(R_train_xts, tickers) {
   pr           <- prep_returns(R_train_xts, tickers)
   R_mat        <- pr$R
   tickers_used <- pr$tickers
   if (length(tickers_used) < MIN_ASSETS_FOR_MAX_WEIGHT) {
-    stop("zu wenige Ticker fuer Min-Semicovariance-Portfolio")
+    stop("zu wenige Ticker für Min-Semicovariance-Portfolio")
   }
   
   n <- length(tickers_used)
@@ -731,7 +732,7 @@ optimize_min_semicov <- function(R_train_xts, tickers) {
   w[w < 1e-10] <- 0
   if (sum(w) > 0) w <- w / sum(w)
   if (any(w < MIN_WEIGHT - 1e-8) || any(w > MAX_WEIGHT + 1e-5)) {
-    stop("MinSemiCov-Loesung verletzt gemeinsame Max-Gewicht-Constraint")
+    stop("MinSemiCov-Lösung verletzt gemeinsame Max-Gewicht-Constraint")
   }
   expand_weights(w, tickers)
 }
@@ -742,12 +743,12 @@ optimize_min_semicov <- function(R_train_xts, tickers) {
 # Standard-Transformation (siehe Cornuejols/Tuetuencue 2007, Kapitel 8.3):
 #
 #   Substitution y = k*w mit k = 1 / (mu'w - r_f)  (k > 0 angenommen)
-#   Dann loest das aequivalente QP:
+#   Dann löst das äquivalente QP:
 #       min  y' Sigma y  s.t.  (mu - r_f)' y = 1,  y >= 0
-#   Rueckrechnung:  w = y / sum(y)
+#   Rückrechnung:  w = y / sum(y)
 #
 # Voraussetzung: max(mu - r_f) > 0 im Universum, sonst existiert keine
-# Tangency-Loesung. Der Code prueft diese Bedingung und bricht sonst sauber ab.
+# Tangency-Lösung. Der Code prüft diese Bedingung und bricht sonst sauber ab.
 optimize_maxsharpe <- function(R_train_xts, tickers, rf = RF_DAILY) {
   pr           <- prep_returns(R_train_xts, tickers)
   R_mat        <- pr$R
@@ -756,7 +757,7 @@ optimize_maxsharpe <- function(R_train_xts, tickers, rf = RF_DAILY) {
   
   n     <- length(tickers_used)
   if (n * MAX_WEIGHT < 1) {
-    stop("zu wenige Ticker fuer gemeinsame Max-Gewicht-Constraint: ",
+    stop("zu wenige Ticker für gemeinsame Max-Gewicht-Constraint: ",
          n, " * ", MAX_WEIGHT, " < 1")
   }
   mu    <- colMeans(R_mat)
@@ -767,7 +768,7 @@ optimize_maxsharpe <- function(R_train_xts, tickers, rf = RF_DAILY) {
   mu_excess <- mu - rf
   if (max(mu_excess) <= 0) {
     stop("kein Ticker mit positivem Excess-Return im Trainingsfenster - ",
-         "Tangency-Loesung existiert nicht")
+         "Tangency-Lösung existiert nicht")
   }
   
   Dmat <- 2 * Sigma_reg
@@ -802,14 +803,14 @@ optimize_maxsharpe <- function(R_train_xts, tickers, rf = RF_DAILY) {
   )
   
   y <- sol$solution
-  if (sum(y) <= 1e-10) stop("Max-Sharpe-Loesung degeneriert (sum(y) <= 0)")
+  if (sum(y) <= 1e-10) stop("Max-Sharpe-Lösung degeneriert (sum(y) <= 0)")
   
   w <- y / sum(y)
   names(w) <- tickers_used
   w[w < 1e-10] <- 0
   if (sum(w) > 0) w <- w / sum(w)
   if (any(w < MIN_WEIGHT - 1e-8) || any(w > MAX_WEIGHT + 1e-5)) {
-    stop("MaxSharpe-Loesung verletzt gemeinsame Max-Gewicht-Constraint")
+    stop("MaxSharpe-Lösung verletzt gemeinsame Max-Gewicht-Constraint")
   }
   expand_weights(w, tickers)
 }
@@ -818,10 +819,10 @@ optimize_maxsharpe <- function(R_train_xts, tickers, rf = RF_DAILY) {
 ## ---- 4.3 Gemeinsame Kennzahlen- und Blend-Helfer ----------------------------
 
 # Custom Risk-Funktion: Target-Semivarianz
-# Berechnet fuer eine Renditereihe den Mittelwert der quadrierten echten
+# Berechnet für eine Renditereihe den Mittelwert der quadrierten echten
 # Verluste unter 0. Das passt zur Interpretation von Fear of Loss: relevant
-# ist nicht Unterperformance gegenueber dem eigenen Mittelwert, sondern ein
-# tatsaechlich negativer Tagesertrag.
+# ist nicht Unterperformance gegenüber dem eigenen Mittelwert, sondern ein
+# tatsächlich negativer Tagesertrag.
 SemiVariance <- function(R, ...) {
   r <- tryCatch(as.numeric(R), error = function(e) NA_real_)
   r <- r[is.finite(r)]
@@ -833,7 +834,7 @@ SemiVariance <- function(R, ...) {
 make_hybrid_blend <- function(w_sharpe, w_behav, tickers,
                               alpha = HYBRID_ALPHA) {
   if (is.null(w_sharpe) || is.null(w_behav)) {
-    stop("Hybrid-Blend benoetigt MaxSharpe- und Behavioral-Gewichte")
+    stop("Hybrid-Blend benötigt MaxSharpe- und Behavioral-Gewichte")
   }
   ws <- expand_weights(w_sharpe, tickers)
   wb <- expand_weights(w_behav,  tickers)
@@ -857,7 +858,7 @@ make_hybrid_blend <- function(w_sharpe, w_behav, tickers,
 # 5. BACKTEST-SCHLEIFE (EXPANDING WINDOW)
 # ==============================================================================
 
-cat("[4/7] Starte Backtest-Schleife ueber", length(REBAL_YEARS), "Rebalancing-Zeitpunkte ...\n")
+cat("[4/7] Starte Backtest-Schleife über", length(REBAL_YEARS), "Rebalancing-Zeitpunkte ...\n")
 
 # Bestimme reale (letzte Handelstage) Rebalancing-Termine aus den Daten
 rebal_dates <- sapply(REBAL_YEARS, function(y) {
@@ -867,7 +868,7 @@ rebal_dates <- sapply(REBAL_YEARS, function(y) {
 rebal_dates <- as.Date(rebal_dates)
 names(rebal_dates) <- as.character(REBAL_YEARS)
 
-# Speicher fuer Ergebnisse
+# Speicher für Ergebnisse
 weights_sharpe   <- list()
 weights_behav    <- list()
 weights_arnott   <- list()
@@ -898,7 +899,7 @@ for (i in seq_along(rebal_dates)) {
     returns_mat       = returns_clean,
     constituents_year = constituent_list[[yr]]
   )
-  # Zusaetzlich: pre-check, wie viele davon tatsaechlich volle Historie haben
+  # Zusätzlich: Pre-Check, wie viele davon tatsächlich volle Historie haben
   pr_peek <- prep_returns(returns_clean[index(returns_clean) <= rd, ], uni)
   cat(sprintf("      Universum: %d Titel (davon mit voller Historie + Varianz > 0: %d)\n",
               length(uni), length(pr_peek$tickers)))
@@ -941,7 +942,7 @@ for (i in seq_along(rebal_dates)) {
               as.numeric(difftime(Sys.time(), t0, units = "secs"))))
   
   # --- Robustheitsmodell: Arnott-Blend --------------------------------------
-  # Passives Schiefe-Harvesting ueber 1/N-Marktbein; dient dem methodischen
+  # Passives Schiefe-Harvesting über 1/N-Marktbein; dient dem methodischen
   # Vergleich zur aktiven FOMO/FOL-Optimierung.
   cat("      berechne Arnott-Robustheitsmodell (FOL-MinSemiCov + FOMO-1/N) ...\n")
   t0 <- Sys.time()
@@ -956,7 +957,7 @@ for (i in seq_along(rebal_dates)) {
               as.numeric(difftime(Sys.time(), t0, units = "secs"))))
   
   # --- Modell 3: Hybrid (Blend aus MaxSharpe + aktivem Behavioral) ----------
-  # Der Hybrid testet die Forschungsfrage "ergaenzen" transparent als lineare
+  # Der Hybrid testet die Forschungsfrage "ergänzen" transparent als lineare
   # Kombination der klassischen und der verhaltensorientierten Allokation.
   if (RUN_HYBRID) {
     cat("      erstelle Hybrid-Blend (MaxSharpe + Behavioral-FOMO/FOL) ...\n")
@@ -980,8 +981,8 @@ for (i in seq_along(rebal_dates)) {
     w_hybrid <- NULL
   }
   
-  # Mit einfacher [[<- NULL wuerde R das Listenelement loeschen. Die [<- Form
-  # behaelt auch fehlgeschlagene Jahre als NULL-Eintrag fuer Diagnose/Export.
+  # Mit einfacher [[<- NULL würde R das Listenelement löschen. Die [<- Form
+  # behält auch fehlgeschlagene Jahre als NULL-Eintrag für Diagnose/Export.
   weights_sharpe[yr] <- list(w_sharpe)
   weights_behav[yr]  <- list(w_behav)
   weights_arnott[yr] <- list(w_arnott)
@@ -993,31 +994,31 @@ for (i in seq_along(rebal_dates)) {
     constraint_diagnostic_row(w_hybrid, "Hybrid",     yr, length(uni))
   )
   
-  # --- OOS-Renditen (statische Zielgewichte; taeglich auf Zielgewichte rebalanciert) ---
-  # Mathematisch entspricht as.matrix(R_oos) %*% w einer taeglich
+  # --- OOS-Renditen (statische Zielgewichte; täglich auf Zielgewichte rebalanciert) ---
+  # Mathematisch entspricht as.matrix(R_oos) %*% w einer täglich
   # rebalancierten Strategie mit konstanten Zielgewichten. Es ist keine
   # Strategie mit driftenden Einzeltitelgewichten.
   R_oos <- returns_clean[index(returns_clean) > rd & index(returns_clean) <= holding_end, uni]
   #
   # DELISTING-/NA-BEHANDLUNG:
-  # Wenn ein Ticker waehrend der OOS-Periode delistet wird (Pleite, Uebernahme),
-  # bricht die RI-Reihe ab und es kommen NAs. Die korrekte oekonomische
-  # Behandlung haengt vom Grund ab, ist aber in Ermangelung von Detail-
-  # informationen folgendermassen approximiert:
+  # Wenn ein Ticker während der OOS-Periode delistet wird (Pleite, Übernahme),
+  # bricht die RI-Reihe ab und es kommen NAs. Die korrekte ökonomische
+  # Behandlung hängt vom Grund ab, ist aber in Ermangelung von Detail-
+  # informationen folgendermaßen approximiert:
   #
-  # 1) Letzte verfuegbare Rendite vor dem Abbruch -> Total-Loss-Tag (-100 %)
+  # 1) Letzte verfügbare Rendite vor dem Abbruch -> Total-Loss-Tag (-100 %)
   #    annehmen, wenn der RI plausibel "abrupt" endet (Pleite-Annahme).
   # 2) Danach gibt der Ticker keine weitere Rendite (Position ist verfallen).
   #
-  # Vereinfachte robuste Implementierung: am letzten gueltigen Tag jedes
+  # Vereinfachte robuste Implementierung: am letzten gültigen Tag jedes
   # delisteten Tickers wird eine Rendite von -1 (Total Loss) gesetzt.
   # WICHTIG: Da diese Skriptvariante S&P_500_Daten.xlsx nutzt, ist der
   # Survivorship Bias insgesamt NICHT korrigiert; diese Regel behandelt nur
   # NAs innerhalb einer OOS-Haltedauer, falls sie in der Datei auftreten.
   #
-  # Hinweis: Falls dein LSEG-Datensatz fuer Uebernahmen/Mergers den letzten
-  # RI-Wert oekonomisch korrekt enthaelt (Uebernahmepreis), ueberschaetzt
-  # dieser Mechanismus den Verlust geringfuegig. Fuer eine reine Pleite-
+  # Hinweis: Falls dein LSEG-Datensatz für Übernahmen/Mergers den letzten
+  # RI-Wert ökonomisch korrekt enthält (Übernahmepreis), überschätzt
+  # dieser Mechanismus den Verlust geringfügig. Für eine reine Pleite-
   # Annahme ist er korrekt.
   for (col in colnames(R_oos)) {
     s <- as.numeric(R_oos[, col])
@@ -1050,13 +1051,13 @@ for (i in seq_along(rebal_dates)) {
   }
 }
 
-# Zusammenfuegen zu einer einzigen OOS-Zeitreihe je Modell
-# ---- Sicherer Helper: gibt NULL zurueck statt Absturz, wenn Liste leer/komplett NULL ----
+# Zusammenfügen zu einer einzigen OOS-Zeitreihe je Modell
+# ---- Sicherer Helper: gibt NULL zurück statt Absturz, wenn Liste leer/komplett NULL ----
 safe_rbind_xts <- function(lst, col_name) {
   lst <- lst[!vapply(lst, is.null, logical(1))]
   if (length(lst) == 0) {
     warning(sprintf(
-      "Keine Ergebnisse fuer Strategie '%s' - Optimierung in allen Perioden fehlgeschlagen.",
+      "Keine Ergebnisse für Strategie '%s' - Optimierung in allen Perioden fehlgeschlagen.",
       col_name))
     return(NULL)
   }
@@ -1096,24 +1097,24 @@ if (!is.null(R_behav_oos))  cat("    Behavioral-OOS:", nrow(R_behav_oos),  "Tage
 if (!is.null(R_arnott_oos)) cat("    Arnott-OOS:",     nrow(R_arnott_oos), "Tage\n")
 if (!is.null(R_hybrid_oos)) cat("    Hybrid-OOS:",     nrow(R_hybrid_oos), "Tage\n")
 
-# ---- Fruehzeitiger Abbruch mit klarer Meldung, wenn keines der Modelle liefert ----
+# ---- Frühzeitiger Abbruch mit klarer Meldung, wenn keines der Modelle liefert ----
 if (is.null(R_sharpe_oos) && is.null(R_behav_oos) &&
     is.null(R_arnott_oos) && is.null(R_hybrid_oos)) {
   stop("Keines der Modelle hat OOS-Renditen produziert. ",
-       "Pruefe die Fehlermeldungen (warnings()) und den Diagnose-Output oben.")
+       "Prüfe die Fehlermeldungen (warnings()) und den Diagnose-Output oben.")
 }
 if (is.null(R_behav_oos)) {
   stop("Behavioral hat keine OOS-Renditen produziert. ",
-       "Die Excel wird nicht mit einem unvollstaendigen Modellvergleich ueberschrieben. ",
-       "Pruefe die Behavioral-Fehlermeldungen direkt oberhalb im Konsolenoutput.")
+       "Die Excel wird nicht mit einem unvollständigen Modellvergleich überschrieben. ",
+       "Prüfe die Behavioral-Fehlermeldungen direkt oberhalb im Konsolenoutput.")
 }
 if (is.null(R_arnott_oos)) {
   warning("Arnott-Robustheitsmodell hat keine OOS-Renditen produziert. ",
-          "Der Hauptvergleich bleibt moeglich, der Robustheitsvergleich fehlt.")
+          "Der Hauptvergleich bleibt möglich, der Robustheitsvergleich fehlt.")
 }
 if (RUN_HYBRID && is.null(R_hybrid_oos)) {
   stop("Hybrid hat keine OOS-Renditen produziert, weil MaxSharpe oder Behavioral fehlt. ",
-       "Die Excel wird nicht mit einem unvollstaendigen Modellvergleich ueberschrieben.")
+       "Die Excel wird nicht mit einem unvollständigen Modellvergleich überschrieben.")
 }
 
 
@@ -1126,8 +1127,8 @@ cat("[6/7] Lade Benchmark S&P 500 TR ...\n")
 ## ---- Echter S&P 500 TR via quantmod -----------------------------------------
 R_sp500tr <- NULL
 if (!has_quantmod) {
-  stop("Paket 'quantmod' nicht installiert. Es wird zwingend fuer den ",
-       "S&P 500 TR-Benchmark benoetigt. Bitte 'install.packages(\"quantmod\")'.")
+  stop("Paket 'quantmod' nicht installiert. Es wird zwingend für den ",
+       "S&P 500 TR-Benchmark benötigt. Bitte 'install.packages(\"quantmod\")'.")
 }
 suppressPackageStartupMessages(library(quantmod))
 tryCatch({
@@ -1140,7 +1141,7 @@ tryCatch({
   cat("    -> SP500TR geladen:", nrow(R_sp500tr), "Tage\n")
 }, error = function(e) {
   stop("quantmod-Download von ^SP500TR fehlgeschlagen: ", e$message,
-       "\nBitte Internetverbindung pruefen oder Daten manuell beilegen.")
+       "\nBitte Internetverbindung prüfen oder Daten manuell beilegen.")
 })
 
 
@@ -1150,8 +1151,8 @@ tryCatch({
 
 cat("[7/7] Berechne Performance-Metriken & exportiere Excel ...\n")
 
-## ---- 7.1 Gesamtes Panel aller OOS-Returns zusammenfuehren -------------------
-# Nur nicht-NULL-Ergebnisse beruecksichtigen
+## ---- 7.1 Gesamtes Panel aller OOS-Returns zusammenführen --------------------
+# Nur nicht-NULL-Ergebnisse berücksichtigen
 panel_list <- list()
 if (!is.null(R_sharpe_oos)) panel_list$MaxSharpe   <- R_sharpe_oos
 if (!is.null(R_behav_oos))  panel_list$Behavioral  <- R_behav_oos
@@ -1185,8 +1186,12 @@ calc_metrics <- function(R, scale = 252) {
     mdd <- as.numeric(maxDrawdown(R[, col]))
     # CVaR bei 95 % (PerformanceAnalytics-Default: historisch)
     cvar95 <- as.numeric(CVaR(R[, col], p = ES_ALPHA, method = "historical"))
-    # Sortino-aehnlich: rf-adjustierte Rendite pro Semideviation unter 0
-    sortino <- (ann_ret - RF_ANNUAL) / sqrt(ann_semivar)
+    # Sortino-ähnlich: rf-adjustierte Rendite pro Semideviation unter 0
+    sortino <- if (is.finite(ann_semivar) && ann_semivar > 0) {
+      (ann_ret - RF_ANNUAL) / sqrt(ann_semivar)
+    } else {
+      NA_real_
+    }
     
     metr[col, "AnnReturn"]   <- ann_ret
     metr[col, "AnnVariance"] <- ann_var
@@ -1259,9 +1264,9 @@ readme_text <- data.frame(
     "Modell 1", "Modell 2", "Robustheitsmodell", "Modell 3",
     "Gemeinsame Constraints", "Behavioral-Parameter",
     "Solver Behavioral",
-    "Begruendung Behavioral",
+    "Begründung Behavioral",
     "Diskussion Schiefe",
-    "Universum (jaehrlich)", "Rf (p.a.)",
+    "Universum (jährlich)", "Rf (p.a.)",
     "Limitation rf",
     "Hinweis Survivorship"
   ),
@@ -1269,7 +1274,7 @@ readme_text <- data.frame(
     "Backtest Mean-Variance vs. Behavioral vs. Arnott vs. Hybrid (S&P 500)",
     as.character(Sys.time()),
     paste(OOS_START, "bis", OOS_END),
-    paste0("Jaehrlich, ", paste(REBAL_YEARS, collapse = ", ")),
+    paste0("Jährlich, ", paste(REBAL_YEARS, collapse = ", ")),
     "S&P 500 Total Return (Yahoo, ^SP500TR)",
     "Modell 1 (Mean-Variance / Max Sharpe, Tangency, quadprog)",
     "Modell 2 (Behavioral aktiv: max Skew(w) / SemiDev_0(w); FOMO/FOL-Ratio)",
@@ -1278,7 +1283,7 @@ readme_text <- data.frame(
            "% MaxSharpe + ", 100*(1-HYBRID_ALPHA),
            "% Behavioral-FOMO/FOL)"),
     paste0("long-only, voll investiert, max. ", 100*MAX_WEIGHT,
-           "% je Einzeltitel fuer alle optimierten Modelle; MIN_WEIGHT=",
+           "% je Einzeltitel für alle optimierten Modelle; MIN_WEIGHT=",
            MIN_WEIGHT, " nur numerische Solver-Untergrenze"),
     paste0("Zielfunktion Behavioral: max Skew(w)/SemiDev_0(w); Schiefe = ",
            "Fisher-Pearson stichprobenkorrigiert; SemiDev_0 = annualisierte ",
@@ -1288,12 +1293,12 @@ readme_text <- data.frame(
            "T / SemiDev_full, begrenzt auf [", ARNOTT_ALPHA_MIN,
            ", ", ARNOTT_ALPHA_MAX, "]"),
     paste0("FOMO_FOL_SOLVER=", FOMO_FOL_SOLVER,
-           "; DEoptim verfuegbar=", has_DEoptim,
+           "; DEoptim verfügbar=", has_DEoptim,
            if (tolower(FOMO_FOL_SOLVER) == "deoptim") {
-             "; DEoptim wird fuer Behavioral erzwungen; FOMO_FOL_DE_N_MAX ist nur im auto-Modus relevant"
+             "; DEoptim wird für Behavioral erzwungen; FOMO_FOL_DE_N_MAX ist nur im auto-Modus relevant"
            } else {
              paste0("; DEoptim bis n<=", FOMO_FOL_DE_N_MAX,
-                    " im auto-Modus, Local Search fuer groessere Universen")
+                    " im auto-Modus, Local Search für größere Universen")
            },
            "; Local Search bleibt als alternative Solveroption dokumentiert",
            "; Local Trials=", FOMO_FOL_LOCAL_TRIALS,
@@ -1304,8 +1309,8 @@ readme_text <- data.frame(
            100*MAX_NA_SHARE, "% NAs"),
     paste0(100*RF_ANNUAL, "%"),
     paste0("Konstanter risikofreier Zinssatz von ", 100*RF_ANNUAL,
-           "% p.a. ueber 2017-2026; bewusste Vereinfachung, in der Interpretation/Limitations zu nennen."),
-    "Nicht korrigiert: Es wird S&P_500_Daten.xlsx verwendet; Survivorship Bias wird bewusst ausser Acht gelassen."
+           "% p.a. über 2017-2026; bewusste Vereinfachung, in der Interpretation/Limitations zu nennen."),
+    "Nicht korrigiert: Es wird S&P_500_Daten.xlsx verwendet; Survivorship Bias wird bewusst außer Acht gelassen."
   ),
   stringsAsFactors = FALSE
 )
@@ -1338,7 +1343,7 @@ if (!is.null(metrics_boom)) {
 # optimiert werden konnte. Das verhindert "stille" leere Sheets.
 addWorksheet(wb, "Diagnostics")
 writeData(wb, "Diagnostics", diag_df)
-writeData(wb, "Diagnostics", "Constraint-Check: gleiche Anlagebedingungen fuer alle Modelle",
+writeData(wb, "Diagnostics", "Constraint-Check: gleiche Anlagebedingungen für alle Modelle",
           startRow = nrow(diag_df) + 4, startCol = 1)
 writeData(wb, "Diagnostics", constraint_diag_df,
           startRow = nrow(diag_df) + 5, startCol = 1)
@@ -1363,7 +1368,7 @@ cat("\nFERTIG. Ergebnisdatei:", normalizePath(OUTPUT_PATH, mustWork = FALSE), "\
 
 
 ################################################################################
-#  ANMERKUNGEN FUER DIE BACHELORARBEIT                                         #
+#  ANMERKUNGEN FÜR DIE BACHELORARBEIT                                          #
 #  -----------------------------------------------------------------------     #
 #  * Modell 2 optimiert beide behavioralen Komponenten aktiv:                  #
 #    Fear of Missing Out wird als korrigierte Portfolio-Schiefe gemessen,      #
@@ -1373,22 +1378,22 @@ cat("\nFERTIG. Ergebnisdatei:", normalizePath(OUTPUT_PATH, mustWork = FALSE), "\
 #                                                                              #
 #  * Bei negativer Schiefe nutzt die Zielfunktion eine stetige Penalty. Damit  #
 #    wird die Vorzeichenfalle vermieden: Ein negativer Quotient darf nicht     #
-#    durch groessere Semideviation kuenstlich "besser" werden.                 #
+#    durch größere Semideviation künstlich "besser" werden.                    #
 #                                                                              #
-#  * Die direkte Sample-Schiefe-Optimierung bleibt schaetzsensitiv,            #
+#  * Die direkte Sample-Schiefe-Optimierung bleibt schätzsensitiv,             #
 #    tail-getrieben und nicht-konvex. Genau deshalb wird der Arnott-Blend als  #
-#    zusaetzliches Robustheitsmodell beibehalten: aktive FOMO/FOL-Optimierung  #
-#    versus passives Schiefe-Harvesting ueber ein 1/N-Marktbein.               #
+#    zusätzliches Robustheitsmodell beibehalten: aktive FOMO/FOL-Optimierung   #
+#    versus passives Schiefe-Harvesting über ein 1/N-Marktbein.                #
 #                                                                              #
-#  * Ein konzentrierteres Behavioral-Portfolio und schwaechere Krisenperformance#
-#    gegenueber Arnott waeren erwartete Trade-offs, keine Codefehler. Diese    #
-#    Befunde gehoeren in die Diskussion der Frage "ersetzen oder ergaenzen".   #
+#  * Ein konzentrierteres Behavioral-Portfolio und schwächere Krisenperformance #
+#    gegenüber Arnott wären erwartete Trade-offs, keine Codefehler. Diese      #
+#    Befunde gehören in die Diskussion der Frage "ersetzen oder ergänzen".     #
 #                                                                              #
 #  * Modell 3 ist ein transparenter Hybrid-Blend aus MaxSharpe und aktivem     #
 #    Behavioral. Dadurch ist klar erkennbar, was durch die Behavioral-         #
-#    Komponente ergaenzt wird, ohne weitere Praeferenzparameter einzufuehren.  #
+#    Komponente ergänzt wird, ohne weitere Präferenzparameter einzuführen.     #
 #                                                                              #
-#  * Die Box-Constraint max=0.10 je Titel gilt fuer ALLE Modellportfolios.     #
+#  * Die Box-Constraint max=0.10 je Titel gilt für ALLE Modellportfolios.      #
 #    Dadurch werden MaxSharpe, Behavioral, Arnott und Hybrid unter identischen #
 #    Anlagebedingungen verglichen.                                             #
 #                                                                              #
