@@ -1,207 +1,363 @@
-[README.md](https://github.com/user-attachments/files/28179041/README.md)
-# Behavioral-Finance-Portfolio-Backtest
-Dieses Repository enthält den R-Code, die Eingabedaten und die Ergebnisdateien zur empirischen Portfolioanalyse der Bachelorarbeit „Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out im Asset Management".
 # Behavioral Finance Portfolio Backtest
 
-Dieses Repository enthaelt die digitalen Anhangsdateien zur Bachelorarbeit
-**"Behavioral Finance im Portfoliomanagement: Die Rolle von Fear of Loss und Fear of Missing Out im Asset Management"**. Der empirische Teil vergleicht
-klassische und verhaltensorientierte Portfolioansaetze auf Basis historischer
-S&P-500-Daten. Im Mittelpunkt stehen klassische Rendite-Risiko-Logiken sowie
-die Operationalisierung von **Fear of Loss (FOL)** ueber Semivarianz bzw.
-Semideviation und **Fear of Missing Out (FOMO)** ueber positive Schiefe.
+Dieses Repository enthält ausschließlich den R-Code zur empirischen Analyse der
+Bachelorarbeit **„Behavioral Finance im Portfoliomanagement“**. Die zugehörigen
+Excel-Daten, Ergebnisdateien, Grafiken und PDF-Exports werden aus
+Lizenz-, Speicher- und Reproduzierbarkeitsgründen nicht versioniert.
 
-Der Code dient der Nachvollziehbarkeit der Datenaufbereitung,
-Portfoliokonstruktion, Out-of-Sample-Auswertung und grafischen Darstellung der
-in der Arbeit berichteten Ergebnisse.
+Der Code vergleicht klassische und verhaltensorientierte Portfoliomodelle auf
+Basis historischer S&P-500-Daten. Im Mittelpunkt stehen die Behavioral-Finance-
+Komponenten **Fear of Loss (FOL)** und **Fear of Missing Out (FOMO)**.
 
-## Inhalt des Repositorys
+## Repository-Inhalt
+
+Im Git-Repository sollen nur folgende Dateien liegen:
 
 ```text
 .
-+-- Modellvergleich.R
-+-- Auswertung Ergebnisse Modellvergleich.R
-+-- S&P_500_Daten.xlsx
-+-- Backtest_Ergebnisse.xlsx
-+-- Backtest_Auswertung.xlsx
-+-- Backtest_Charts.pdf
-+-- Plots/
-    +-- 01_Equity_Curves.png
-    +-- 02_Drawdown.png
-    +-- 03_Rolling_Volatility.png
-    +-- 04_Annual_Returns.png
-    +-- 05_Metrics_Heatmap.png
-    +-- 06_Krise_Boom.png
-    +-- 07_Konzentration_EffN.png
-    +-- 08_Konzentration_AnzPos.png
-    +-- 09_Top10_Holdings.png
-    +-- 10_Skew_Semi_Scatter.png
-    +-- 11_Renditeverteilungen.png
-    +-- 12_Sharpe_vs_Sortino.png
-    +-- 13_Outperformance.png
-    +-- 14_Korrelationsmatrix.png
-    +-- 15_Krise_Boom_Bars.png
+├── Modellvergleich.R
+├── Auswertung Ergebnisse Modellvergleich.R
+├── README.md
+└── .gitignore
 ```
 
-## Dateiuebersicht
+Nicht Bestandteil des Repositorys sind insbesondere:
 
-- `Modellvergleich.R`: Fuehrt den eigentlichen Backtest durch. Das Skript
-  liest `S&P_500_Daten.xlsx`, konstruiert die Modellportfolios und erzeugt
-  `Backtest_Ergebnisse.xlsx`.
+- `S&P_500_Daten.xlsx`
+- `Backtest_Ergebnisse.xlsx`
+- `Backtest_Auswertung.xlsx`
+- `Backtest_Charts.pdf`
+- der Ordner `Plots/`
+- Word-, PowerPoint-, PDF-, CSV- und sonstige Arbeitsdateien
 
-- `Auswertung Ergebnisse Modellvergleich.R`: Liest `Backtest_Ergebnisse.xlsx`
-  ein und erstellt die aufbereitete Ergebnisdatei `Backtest_Auswertung.xlsx`,
-  die Chart-PDF `Backtest_Charts.pdf` sowie die PNG-Grafiken im Ordner
-  `Plots/`.
+Diese Dateien werden lokal benötigt oder lokal erzeugt, aber nicht in Git
+gespeichert.
 
-- `S&P_500_Daten.xlsx`: Eingabedatei mit S&P-500-Daten. Die Datei enthaelt ein
-  Hauptsheet `S&P500` sowie Rebalancing-Sheets fuer die Jahre 2016 bis 2026.
-  Die Datenbasis beruht auf ueber Datastream/LSEG bezogenen Einzeltiteldaten.
+## Skripte
 
-- `Backtest_Ergebnisse.xlsx`: Rohere Ergebnisdatei des Backtests. Enthalten
-  sind unter anderem Out-of-Sample-Renditen, Gesamtmetriken, Phasenmetriken,
-  Diagnostikdaten und Portfolio-Gewichte.
+| Datei | Zweck |
+| --- | --- |
+| `Modellvergleich.R` | Hauptskript für Datenimport, Portfoliooptimierung, Backtest, Benchmark-Download und Export der Roh-Ergebnisse. |
+| `Auswertung Ergebnisse Modellvergleich.R` | Auswertungsskript für Kennzahlen, Tabellen, Grafiken, Excel-Bericht und Sammel-PDF. |
 
-- `Backtest_Auswertung.xlsx`: Aufbereitete Ergebnisdatei fuer die Interpretation
-  der empirischen Analyse. Die Datei enthaelt zusammenfassende Tabellen,
-  Kennzahlen, Rohdaten, Gewichtungsmatrizen und eingebettete Grafiken.
+## Lokale Dateien
 
-- `Backtest_Charts.pdf`: Sammel-PDF mit den wichtigsten grafischen
-  Ergebnisdarstellungen.
+Damit der Code ausgeführt werden kann, muss die Eingabedatei lokal vorhanden
+sein:
 
-- `Plots/`: Ordner mit den einzeln exportierten Grafiken im PNG-Format.
+```text
+S&P_500_Daten.xlsx
+```
 
-## Methodischer Kurzueberblick
+Diese Datei wird nicht mitversioniert. Sie muss vor dem Start von
+`Modellvergleich.R` im lokalen Arbeitsordner liegen oder der Pfad `BASE_PATH`
+im Skript muss entsprechend angepasst werden.
 
-Der Backtest verwendet eine Expanding-Window-Logik mit jaehrlichem Rebalancing.
-Die Out-of-Sample-Phase beginnt am 1. Januar 2017 und endet am 20. April 2026.
-Als Benchmark wird der S&P 500 Total Return Index (`^SP500TR`) ueber `quantmod`
-eingebunden.
+Nach der Ausführung entstehen lokal folgende Dateien:
 
-Verglichen werden folgende Strategien:
+```text
+Backtest_Ergebnisse.xlsx
+Backtest_Auswertung.xlsx
+Backtest_Charts.pdf
+Plots/*.png
+```
 
-- `MaxSharpe`: Klassisches Mean-Variance-Portfolio bzw. Tangency-Portfolio auf
-  Basis der Sharpe Ratio. Die Optimierung erfolgt mit `quadprog`.
+Auch diese Outputs bleiben außerhalb von Git.
 
-- `Behavioral`: Aktives Behavioral-Portfolio. FOMO wird ueber positive
-  Portfolio-Schiefe operationalisiert, FOL ueber Semideviation unter dem
-  Referenzwert null. Die Zielfunktion maximiert das Verhaeltnis aus Schiefe und
-  Semideviation.
+## Datenbeschaffung
 
-- `Arnott`: Robustheitsmodell mit FOL-MinSemiCov-Komponente und passiver
-  FOMO-Schicht ueber eine gleichgewichtete Marktproxy-Komponente.
+Die Rohdaten werden nicht im Repository bereitgestellt. Wer den Code
+reproduzieren möchte, muss die Datei `S&P_500_Daten.xlsx` selbst erzeugen.
+In der Bachelorarbeit wurden die Einzeltiteldaten über Datastream/LSEG bezogen.
 
-- `Hybrid`: Lineare Kombination aus `MaxSharpe` und `Behavioral` mit einem
-  Hybrid-Anteil von 50 Prozent.
+Verwendet wurden:
 
-- `SP500_TR`: S&P 500 Total Return als marktbreite Benchmark.
+- historische S&P-500-Einzeltitel bzw. das für die Analyse definierte
+  S&P-500-Universum
+- tägliche Return-Index-Zeitreihen (`RI`) je Aktie
+- zusätzliche statische Felder zur Kontrolle bzw. Dokumentation:
+  - `RI`: Return Index
+  - `MV`: Market Value
+  - `UP`: Price bzw. Unadjusted Price
+  - `VO`: Volume
+- jährliche Rebalancing-Listen für 2016 bis 2026
+- S&P 500 Total Return Index als Benchmark; dieser wird im Code separat über
+  `quantmod` von Yahoo Finance als `^SP500TR` geladen
 
-Alle optimierten Modellportfolios verwenden dieselben Grundrestriktionen:
+Der wichtigste Input für den Backtest ist der Datastream-Return-Index (`RI`),
+weil daraus die diskreten Tagesrenditen berechnet werden:
 
-- long-only
-- voll investiert
-- maximales Einzelgewicht von 10 Prozent
-- mindestens 504 Handelstage Historie vor dem jeweiligen Rebalancing-Zeitpunkt
-- maximal 5 Prozent fehlende Werte im juengsten Historienfenster
-- konstanter risikofreier Zinssatz von 2 Prozent p. a.
+```text
+R_t = RI_t / RI_{t-1} - 1
+```
+
+Für die erste Rebalancing-Periode 2016 werden mindestens zwei Jahre Historie
+benötigt. Die Daten sollten deshalb mindestens bis Anfang 2014 zurückreichen
+und bis zum Ende des Untersuchungszeitraums laufen.
+
+## Aufbau der lokalen Datendatei
+
+Der Code erwartet lokal eine Excel-Datei mit dem Namen:
+
+```text
+S&P_500_Daten.xlsx
+```
+
+Diese Datei muss im lokalen `BASE_PATH` liegen oder der Pfad im Skript
+`Modellvergleich.R` muss angepasst werden.
+
+### Sheet `S&P500`
+
+Das Hauptsheet enthält die täglichen Return-Index-Zeitreihen der Aktien. Der
+Code liest das Sheet in zwei Schritten ein: zuerst die Namen aus Zeile 1, danach
+die Daten ab Zeile 6.
+
+Erwarteter Aufbau:
+
+```text
+Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
+Zeile 2:  "RI" in Spalte A, letzter RI-Wert je Aktie ab B
+Zeile 3:  "MV" in Spalte A, letzter MV-Wert je Aktie ab B
+Zeile 4:  "UP" in Spalte A, letzter UP-Wert je Aktie ab B
+Zeile 5:  "VO" in Spalte A, letztes Volumen je Aktie ab B
+Zeile 6+: Datum in Spalte A, tägliche RI-Zeitreihe je Aktie ab B
+```
+
+Wichtig ist, dass die Spaltenreihenfolge der Aktien in diesem Sheet konsistent
+bleibt. Die Werte ab Zeile 6 werden vom Skript als numerische RI-Zeitreihe
+interpretiert.
+
+### Sheets `Rebalancing YYYY`
+
+Zusätzlich erwartet der Code je Jahr ein Rebalancing-Sheet:
+
+```text
+Rebalancing 2016
+Rebalancing 2017
+...
+Rebalancing 2026
+```
+
+Diese Sheets dienen dazu, das investierbare Universum am jeweiligen
+Rebalancing-Stichtag zu bestimmen.
+
+Erwarteter Aufbau:
+
+```text
+Zeile 1:  Formel-/Metatext in Spalte A, Unternehmens- oder Tickerspalten ab B
+Zeile 4:  Jahresendpreis bzw. gültiger Preis je Aktie ab B
+```
+
+Der Code liest aus jedem Rebalancing-Sheet die Ticker aus Zeile 1 und die
+Jahresendpreise aus Zeile 4. Ein gültiger Preis bedeutet, dass der Titel für
+das betreffende Jahr als investierbar berücksichtigt werden kann. Fehlende
+Preise werden als nicht investierbar interpretiert.
+
+Zusätzlich filtert der Code später nochmals nach Datenqualität:
+
+- mindestens `MIN_HISTORY_DAYS = 504` gültige Handelstage vor dem
+  Rebalancing-Stichtag
+- höchstens `MAX_NA_SHARE = 5 %` fehlende Werte im jüngsten Historienfenster
+- keine vollständig fehlenden oder praktisch konstanten Renditereihen
+
+Dadurch wird verhindert, dass Aktien mit zu kurzer Historie oder instabiler
+Datenlage in die Optimierung eingehen.
+
+## Nachvollziehbarer Datenworkflow
+
+Der Datenworkflow war:
+
+1. Historisches S&P-500-Universum bzw. die verwendeten S&P-500-Titel für die
+   Analyse festlegen.
+2. Für alle Aktien tägliche Datastream-Return-Index-Reihen (`RI`) für den
+   gesamten Untersuchungszeitraum herunterladen.
+3. Zusätzlich `MV`, `UP` und `VO` als Kontroll-/Metafelder aus Datastream
+   exportieren.
+4. Die Daten in die beschriebene Excel-Struktur `S&P_500_Daten.xlsx`
+   übertragen.
+5. Für jedes Rebalancing-Jahr 2016 bis 2026 ein Sheet `Rebalancing YYYY`
+   anlegen.
+6. Im jeweiligen Rebalancing-Sheet nur für die am Stichtag investierbaren Titel
+   einen gültigen Preis hinterlegen; fehlende Preise bleiben `NA`.
+7. `Modellvergleich.R` ausführen. Das Skript berechnet aus den RI-Reihen die
+   Tagesrenditen, filtert das investierbare Universum und erzeugt lokal
+   `Backtest_Ergebnisse.xlsx`.
+8. `Auswertung Ergebnisse Modellvergleich.R` ausführen. Das Skript erstellt
+   daraus lokal die Ergebnisgrafiken, den Excel-Auswertungsbericht und das
+   Sammel-PDF.
+
+Da Datastream/LSEG-Daten lizenzpflichtig sein können, werden diese Rohdaten
+nicht veröffentlicht. Die genaue Datenstruktur ist jedoch dokumentiert, sodass
+die Datei mit einem eigenen Datenzugang reproduziert werden kann.
 
 ## Voraussetzungen
 
-Die Skripte sind fuer R ab Version 4.2 ausgelegt. Benoetigt werden die folgenden
-R-Pakete:
+Der Code wurde für R ab Version 4.2 entwickelt und zuletzt mit R 4.5.2 geprüft.
+
+Benötigte R-Pakete:
 
 ```r
 install.packages(c(
-  "readxl",
-  "xts",
-  "zoo",
-  "PerformanceAnalytics",
-  "quadprog",
-  "openxlsx",
-  "quantmod",
-  "DEoptim",
-  "dplyr",
-  "tidyr",
-  "ggplot2",
-  "scales"
+  "readxl", "xts", "zoo", "PerformanceAnalytics",
+  "quadprog", "openxlsx", "quantmod", "DEoptim",
+  "dplyr", "tidyr", "ggplot2", "scales"
 ))
 ```
 
-Hinweis: `DEoptim` wird im Skript nur verwendet, wenn es verfuegbar ist und die
-Universumsgroesse im Auto-Modus unter der festgelegten Schwelle liegt. Bei
-groesseren Universen nutzt das Skript eine Local-Search-Logik fuer das aktive
-Behavioral-Portfolio. Fuer die Benchmark wird eine Internetverbindung benoetigt,
-da `quantmod` den S&P 500 Total Return Index von Yahoo Finance abruft.
+`quantmod` wird für den Download des S&P 500 Total Return Index (`^SP500TR`)
+verwendet. Dafür ist eine Internetverbindung notwendig.
 
-## Ausfuehrung
+## Ausführung
 
-Vor der Ausfuehrung muss in beiden R-Skripten der Pfad `BASE_PATH` auf den
-lokalen Projektordner angepasst werden. Im vorliegenden Arbeitsstand ist dieser
-Pfad auf `F:/FH/Bachelorarbeit/` gesetzt.
-
-Die empfohlene Ausfuehrungsreihenfolge lautet:
+Die Skripte sind in dieser Reihenfolge auszuführen:
 
 ```r
 source("Modellvergleich.R")
 source("Auswertung Ergebnisse Modellvergleich.R")
 ```
 
-Alternativ koennen die Skripte ueber die Kommandozeile ausgefuehrt werden:
+Alternativ über die Konsole:
 
 ```bash
 Rscript "Modellvergleich.R"
 Rscript "Auswertung Ergebnisse Modellvergleich.R"
 ```
 
-## Erwartete Outputs
+Wichtig: In beiden Skripten ist `BASE_PATH` aktuell auf
+`F:/FH/Bachelorarbeit/` gesetzt. Wird das Repository an einen anderen Ort
+geklont, muss dieser Pfad im Setup-Block angepasst werden.
 
-Nach erfolgreicher Ausfuehrung von `Modellvergleich.R` entsteht:
+## Backtest-Design
 
-- `Backtest_Ergebnisse.xlsx`
+- Zeitraum Out-of-Sample: 2017 bis 2026
+- Rebalancing: jährlich auf Basis eines Expanding Windows
+- Anlageuniversum: S&P-500-Konstituenten je Rebalancing-Jahr
+- Benchmark: S&P 500 Total Return Index (`SP500_TR`)
+- Risikofreier Zinssatz: konstant 2 % p.a.
+- Gemeinsame Constraints:
+  - long-only
+  - voll investiert
+  - maximal 10 % Gewicht je Einzeltitel
+  - identische Constraints für alle Modellportfolios
 
-Nach erfolgreicher Ausfuehrung von `Auswertung Ergebnisse Modellvergleich.R`
-entstehen:
+Die Out-of-Sample-Renditen werden als Strategie mit konstanten Zielgewichten je
+Haltedauer berechnet. Mathematisch entspricht `R_oos %*% w` einer täglichen
+Rückführung auf diese Zielgewichte und ist daher kein klassisches
+Buy-and-Hold-Portfolio mit driftenden Einzeltitelgewichten.
 
-- `Backtest_Auswertung.xlsx`
-- `Backtest_Charts.pdf`
-- der Ordner `Plots/` mit 15 PNG-Grafiken
+## Modellübersicht
 
-## Ergebnisdateien
+### MaxSharpe
 
-`Backtest_Ergebnisse.xlsx` enthaelt unter anderem folgende Sheets:
+Klassisches Mean-Variance- bzw. Tangency-Portfolio. Optimiert wird die
+Sharpe-Ratio über eine quadratische Programmierung mit `quadprog`.
 
-- `README`
-- `Returns_OOS`
-- `Metrics_Overall`
-- `Metrics_Crisis_Corona`
-- `Metrics_Boom_Tech23`
-- `Diagnostics`
-- `Weights_MaxSharpe`
-- `Weights_Behavioral`
-- `Weights_Arnott`
-- `Weights_Hybrid`
+### Behavioral
 
-`Backtest_Auswertung.xlsx` bereitet diese Ergebnisse in auswertungsnaher Form
-auf. Enthalten sind unter anderem eine Executive Summary, Wertentwicklung,
-Risiko-Profil, Detailmetriken, Jahresrenditen, Marktphasenanalyse,
-risikoadjustierte Kennzahlen, Konzentrationsanalysen, Top-Holdings,
-Rohdaten-Renditen und Gewichtungsmatrizen.
+Das Behavioral-Hauptmodell optimiert FOMO und FOL aktiv in einer gemeinsamen
+Zielfunktion:
 
-## Hinweise zur Reproduzierbarkeit
+```text
+max Skew(w) / SemiDev_0(w)
+```
 
-- Das Skript `Modellvergleich.R` setzt `set.seed(42)`, um die zufallsbasierte
-  Local-Search-Komponente reproduzierbarer zu machen.
-- Die Ergebnisse koennen sich geringfuegig aendern, wenn externe Datenquellen
-  wie Yahoo Finance nachtraeglich korrigiert werden oder wenn Paketversionen
-  voneinander abweichen.
-- Die Eingabedatei `S&P_500_Daten.xlsx` enthaelt lizenzierte Marktdaten. Eine
-  oeffentliche Weitergabe kann daher eingeschraenkt sein.
-- Dieses Repository dient der Dokumentation und Nachvollziehbarkeit der
-  Bachelorarbeit und ersetzt nicht die methodische Beschreibung im Textteil der
-  Arbeit.
+Dabei gilt:
 
-## Bezug zur Bachelorarbeit
+- FOMO wird über positive Portfolio-Schiefe gemessen.
+- FOL wird über annualisierte Semideviation echter Verluste unter 0 gemessen.
+- Die ökonomische Interpretation lautet: positive Schiefe pro Einheit
+  Downside-Risiko.
+- Negative Schiefe wird in der Zielfunktion über eine Penalty behandelt, damit
+  keine Vorzeichenfalle entsteht.
 
-Die Dateien beziehen sich insbesondere auf die Kapitel zur Portfoliokonstruktion
-und empirischen Analyse. Sie dokumentieren die technische Umsetzung des
-Backtests, die Berechnung der Rendite-, Risiko- und Performancekennzahlen sowie
-die grafische Aufbereitung der zentralen Ergebnisse.
+Die direkte Optimierung von Sample-Schiefe bleibt schätzsensitiv und
+nicht-konvex. Dieser Punkt ist methodisch bewusst dokumentiert und wird in der
+Interpretation als empirischer Trade-off diskutiert.
+
+### Arnott
+
+Der Arnott-Blend dient als Robustheitsmodell. Er kombiniert:
+
+- FOL-Schicht: defensives Min-Semicovariance-Portfolio
+- FOMO-Schicht: 1/N-Marktproxy
+- zeitvariabler Alpha-Faktor auf Basis jüngster gegenüber vollständiger
+  Semideviation
+
+Dieses Modell optimiert Schiefe nicht direkt, sondern bildet FOMO passiv über
+Marktpartizipation ab.
+
+### Hybrid
+
+Das Hybrid-Portfolio ist ein transparenter linearer Blend aus MaxSharpe und
+Behavioral:
+
+```text
+Hybrid = 50 % MaxSharpe + 50 % Behavioral
+```
+
+Es dient dazu, die Forschungsfrage „ersetzen oder ergänzen“ empirisch
+nachvollziehbar zu beantworten.
+
+## Output
+
+`Modellvergleich.R` erzeugt lokal:
+
+```text
+Backtest_Ergebnisse.xlsx
+```
+
+Diese Datei enthält unter anderem:
+
+- Out-of-Sample-Renditen
+- Gesamtmetriken
+- Krisen- und Boomphasenmetriken
+- Constraint-Diagnostik
+- Portfolio-Gewichte
+- Methoden-README
+
+`Auswertung Ergebnisse Modellvergleich.R` erzeugt lokal:
+
+```text
+Backtest_Auswertung.xlsx
+Backtest_Charts.pdf
+Plots/*.png
+```
+
+Diese Ausgaben sind Ergebnisartefakte und werden nicht in Git gespeichert.
+
+## Wichtige Limitationen
+
+- Der risikofreie Zinssatz wird konstant mit 2 % p.a. angenommen.
+- Die direkte Sample-Schiefe-Optimierung ist empirisch sensibel gegenüber
+  Tail-Beobachtungen und nicht-konvex.
+- Die Corona-Stressphase wird bewusst breiter als der reine Crash-Zeitraum
+  definiert: 01.02.2020 bis 30.06.2020.
+- Ein möglicher Survivorship Bias wird nicht vollständig korrigiert, da die
+  lokale Datei `S&P_500_Daten.xlsx` als Datengrundlage verwendet wird.
+- Die S&P-500-Einzeltiteldaten können lizenzrechtlichen Beschränkungen
+  unterliegen und werden deshalb nicht im Repository abgelegt.
+
+## Reproduzierbarkeit
+
+Zur Reproduzierbarkeit wird im Hauptskript `set.seed(42)` gesetzt. Das betrifft
+insbesondere die zufallsbasierten Kandidaten der Local Search im Behavioral-
+Modell. Bei `FOMO_FOL_SOLVER = "auto"` gilt:
+
+- DEoptim wird verwendet, wenn das reduzierte Universum höchstens
+  `FOMO_FOL_DE_N_MAX` Titel enthält.
+- Bei größeren Universen wird Local Search mit derselben Zielfunktion genutzt.
+
+Die Solverwahl wird im Konsolenoutput und lokal im Sheet `README` der Datei
+`Backtest_Ergebnisse.xlsx` dokumentiert.
+
+## Git-Hinweis
+
+Die Datei `.gitignore` ist so ausgelegt, dass Excel-Daten, Ergebnisexports,
+Grafiken, Office-Dateien, temporäre Render-Ordner und R-Arbeitsdateien nicht
+versehentlich versioniert werden. Das Repository bleibt dadurch ein reines
+Code-Repository.
+
+## Autor
+
+Yannick Jungbauer  
+Bachelorarbeit: Behavioral Finance im Portfoliomanagement
