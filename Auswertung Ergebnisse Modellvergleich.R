@@ -8,8 +8,8 @@
 #        Konzentrationsmetriken, Top-Holdings                                  #
 #     2) Publikationsreife Grafiken (PNG 300dpi + Sammel-PDF)                  #
 #                                                                              #
-#   Ausfuehrung: Rscript "Auswertung Ergebnisse Modellvergleich.R"            #
-#   Laufzeit:    abhaengig von System, Datenumfang und Grafikexport            #
+#   Ausführung: Rscript "Auswertung Ergebnisse Modellvergleich.R"             #
+#   Laufzeit:    abhängig von System, Datenumfang und Grafikexport             #
 #                                                                              #
 ################################################################################
 
@@ -54,13 +54,13 @@ RF_DAILY  <- (1 + RF_ANNUAL)^(1/252) - 1
 # 2. AKADEMISCHES PLOT-THEMA & FARBPALETTE
 # ==============================================================================
 
-# Konsistente, dezente Palette - schwarz-weiss-tauglich durch Linientypen-Mix
+# Konsistente, dezente Palette - schwarz-weiß-tauglich durch Linientypen-Mix
 strategy_colors <- c(
   "MaxSharpe"  = "#2C3E50",  # dunkelblau (Mean-Variance)
   "Behavioral" = "#C0392B",  # rot (aktive FOMO/FOL-Ratio)
   "Arnott"     = "#D68910",  # orange (Robustheitsmodell)
   "Hybrid"     = "#8E44AD",  # violett (Sharpe + Behavioral)
-  "SP500_TR"   = "#27AE60"   # gruen (Benchmark)
+  "SP500_TR"   = "#27AE60"   # grün (Benchmark)
 )
 strategy_linetypes <- c(
   "MaxSharpe"  = "solid",
@@ -83,7 +83,7 @@ academic_theme <- theme_bw(base_size = 11) +
     legend.title     = element_blank(),
     legend.key.width = unit(1.2, "cm"),
     panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(color = "grey92", size = 0.3),
+    panel.grid.major = element_line(color = "grey92", linewidth = 0.3),
     axis.title       = element_text(size = 10),
     strip.background = element_rect(fill = "grey95", color = NA),
     strip.text       = element_text(face = "bold", size = 10)
@@ -107,7 +107,7 @@ cat("[1/6] Lese Backtest-Ergebnisse aus", INPUT_FILE, "...\n")
 
 if (!file.exists(INPUT_FILE)) {
   stop("Datei ", INPUT_FILE, " nicht gefunden. ",
-       "Bitte zuerst Bachelorarbeit_Portfolio.R laufen lassen.")
+       "Bitte zuerst Modellvergleich.R ausführen.")
 }
 
 # 3.1 OOS-Renditen
@@ -131,11 +131,7 @@ cat("    -> Strategien:", paste(strategies, collapse = ", "), "\n")
 cat("    -> Zeitraum:", as.character(start(returns_xts)),
     "bis", as.character(end(returns_xts)), "\n")
 
-# 3.2 Original-Metriken aus dem Backtest-Workbook; die erweiterte
-#     Auswertung berechnet spaeter metrics_full neu.
-metrics_overall <- read.xlsx(INPUT_FILE, sheet = "Metrics_Overall")
-
-# Metadaten aus dem Backtest-Workbook lesen, damit die Auswertung automatisch
+# 3.2 Metadaten aus dem Backtest-Workbook lesen, damit die Auswertung automatisch
 # zur aktuellen Modellvergleich-Spezifikation passt.
 readme_input <- tryCatch(
   read.xlsx(INPUT_FILE, sheet = "README"),
@@ -168,15 +164,15 @@ bt_model3 <- get_readme_value(
 )
 bt_constraints <- get_readme_value(
   "Gemeinsame Constraints",
-  "long-only, voll investiert, gleiche Max-Gewichtung fuer alle optimierten Modelle"
+  "long-only, voll investiert, gleiche Max-Gewichtung für alle optimierten Modelle"
 )
 bt_behavioral_params <- get_readme_value(
   "Behavioral-Parameter",
   "Behavioral maximiert Skew(w)/SemiDev_0(w); Arnott bleibt Robustheitsmodell; Hybrid=linearer Blend"
 )
 bt_behavioral_reason <- get_readme_value(
-  "Begruendung Behavioral",
-  "Fuer die Forschungsfrage werden FOMO und FOL aktiv in einer Ratio optimiert; die Stabilitaet wird ueber Arnott als Robustheitsmodell diskutiert."
+  "Begründung Behavioral",
+  "Für die Forschungsfrage werden FOMO und FOL aktiv in einer Ratio optimiert; die Stabilität wird über Arnott als Robustheitsmodell diskutiert."
 )
 bt_skew_discussion <- get_readme_value(
   "Diskussion Schiefe",
@@ -185,7 +181,7 @@ bt_skew_discussion <- get_readme_value(
 bt_rf_limitation <- get_readme_value(
   "Limitation rf",
   paste0("Konstanter risikofreier Zinssatz von ", RF_ANNUAL * 100,
-         "% p.a. ueber den gesamten Backtest; bewusste Vereinfachung.")
+         "% p.a. über den gesamten Backtest; bewusste Vereinfachung.")
 )
 bt_survivorship <- get_readme_value(
   "Hinweis Survivorship",
@@ -245,7 +241,7 @@ calc_full_metrics <- function(R, rf_annual = RF_ANNUAL, scale = 252) {
     skw  <- {
       n <- length(r); m <- mean(r)
       s2 <- sum((r-m)^2)/n
-      if (!is.finite(s2) || s2 <= 1e-20) NA else
+      if (n < 3 || !is.finite(s2) || s2 <= 1e-20) NA else
         (sqrt(n*(n-1))/(n-2)) * (sum((r-m)^3)/n) / s2^1.5
     }
     krt  <- {
@@ -263,11 +259,19 @@ calc_full_metrics <- function(R, rf_annual = RF_ANNUAL, scale = 252) {
     cvar95 <- mean(r[r <= var95])
     
     # === Risk-adjusted Returns ===
-    sharpe  <- (ann_ret - rf_annual) / ann_vol
-    sortino <- (ann_ret - rf_annual) / ann_semidev
-    calmar  <- if (mdd > 0) ann_ret / mdd else NA
+    sharpe  <- if (is.finite(ann_vol) && ann_vol > 0) {
+      (ann_ret - rf_annual) / ann_vol
+    } else {
+      NA_real_
+    }
+    sortino <- if (is.finite(ann_semidev) && ann_semidev > 0) {
+      (ann_ret - rf_annual) / ann_semidev
+    } else {
+      NA_real_
+    }
+    calmar  <- if (is.finite(mdd) && mdd > 0) ann_ret / mdd else NA_real_
     
-    # === Hit Rate / Stabilitaet ===
+    # === Hit Rate / Stabilität ===
     win_rate     <- mean(r > 0)
     best_day     <- max(r)
     worst_day    <- min(r)
@@ -295,7 +299,7 @@ calc_full_metrics <- function(R, rf_annual = RF_ANNUAL, scale = 252) {
 
 metrics_full <- calc_full_metrics(returns_xts)
 
-# Subperioden
+# Teilperioden
 get_subperiod <- function(R, start_d, end_d) {
   R[paste0(start_d, "/", end_d)]
 }
@@ -372,7 +376,7 @@ calc_concentration <- function(W) {
 }
 concentration_list <- lapply(weights_list, calc_concentration)
 
-# Top-10 Holdings beim juengsten Rebalancing je Strategie
+# Top-10-Positionen beim jüngsten Rebalancing je Strategie
 top_holdings <- function(W, n = 10) {
   if (is.null(W) || nrow(W) == 0) return(NULL)
   last_year <- rownames(W)[nrow(W)]
@@ -420,8 +424,8 @@ p_equity <- ggplot(equity_long, aes(x = Date, y = Equity,
   scale_x_date(breaks = "1 year", labels = date_format("%Y")) +
   scale_y_continuous(labels = label_number(accuracy = 0.1)) +
   labs(
-    title    = "Out-of-Sample Wertentwicklung der Portfolio-Strategien",
-    subtitle = "Wachstum von 1 EUR seit Backtest-Start, tägliche Renditen kumuliert",
+    title    = "Out-of-Sample-Wertentwicklung der Portfolio-Strategien",
+    subtitle = "Wachstum von 1 EUR seit Backtest-Start, kumulierte tägliche Renditen",
     x = NULL, y = "Portfolio-Wert (Index, Start = 1)",
     caption  = "Quelle: Eigene Berechnung. Diskrete Tagesrenditen aus S&P 500 Total-Return-Indizes."
   )
@@ -511,10 +515,10 @@ m_sub <- metrics_full[, heatmap_metrics, drop = FALSE]
 m_z <- scale(m_sub)
 # Vorzeichen umdrehen für "schlecht-ist-hoch"-Metriken.
 # MaxDD ist hier ein positiver Verlustbetrag. Skewness bleibt als
-# OOS-FOMO-Kennzahl "hoeher = besser". Im Behavioral-Hauptmodell ist
+# OOS-FOMO-Kennzahl "höher = besser". Im Behavioral-Hauptmodell ist
 # Schiefe Teil der In-Sample-Zielfunktion; im Arnott-Modell wird sie passiv
-# ueber das Marktbein geharvestet. CVaR_95 ist negativ und bleibt
-# unveraendert, weil ein hoeherer Wert (= naeher an 0) besser ist.
+# über das Marktbein erfasst. CVaR_95 ist negativ und bleibt
+# unverändert, weil ein höherer Wert (= näher an 0) besser ist.
 neg_metrics <- c("AnnVol", "MaxDD")
 m_z[, neg_metrics] <- -m_z[, neg_metrics]
 
@@ -542,7 +546,7 @@ p_heat <- ggplot(m_z_df, aes(x = Metric, y = Strategy, fill = Z)) +
                        name = "z-Score\n(höher = besser)") +
   labs(
     title    = "Performance-Metriken im Strategievergleich",
-    subtitle = "Z-Standardisierung je Metrik (Volatilitaet und MDD vorzeicheninvertiert; Schiefe als OOS-FOMO-Kennzahl)",
+    subtitle = "Z-Standardisierung je Metrik (Volatilität und MDD mit invertiertem Vorzeichen; Schiefe als OOS-FOMO-Kennzahl)",
     x = NULL, y = NULL,
     caption  = "Quelle: Eigene Berechnung. Werte in Zellen sind Rohgrößen, Färbung ist relativ je Spalte."
   ) +
@@ -550,7 +554,7 @@ p_heat <- ggplot(m_z_df, aes(x = Metric, y = Strategy, fill = Z)) +
         axis.text.x = element_text(angle = 30, hjust = 1))
 save_plot(p_heat, "05_Metrics_Heatmap.png", width = 22, height = 10)
 
-# 7.6 Subperioden-Vergleich (Krise + Boom)
+# 7.6 Teilperioden-Vergleich (Krise + Boom)
 cat("    -> Plot 6: Krise vs Boom\n")
 prep_subp <- function(R, label) {
   if (is.null(R) || nrow(R) == 0) return(NULL)
@@ -581,13 +585,13 @@ p_phases <- ggplot(df_phases, aes(x = Date, y = Equity,
   scale_y_continuous(labels = label_number(accuracy = 0.01)) +
   labs(
     title    = "Performance in Stress- und Boom-Phasen",
-    subtitle = "Wachstum von 1 EUR über den jeweiligen Sub-Zeitraum",
+    subtitle = "Wachstum von 1 EUR über den jeweiligen Teilzeitraum",
     x = NULL, y = "Wert (Index, Start = 1)",
     caption = "Quelle: Eigene Berechnung."
   )
 save_plot(p_phases, "06_Krise_Boom.png", width = 22, height = 10)
 
-# 7.7 Effektive Positionen ueber Zeit
+# 7.7 Effektive Positionen über Zeit
 cat("    -> Plot 7-8: Portfolio-Konzentration\n")
 conc_df <- bind_rows(lapply(names(concentration_list), function(strat) {
   df <- concentration_list[[strat]]
@@ -605,7 +609,7 @@ p_effn <- ggplot(conc_df, aes(x = Year, y = EffN, color = Strategy,
   scale_color_manual(values = strategy_colors) +
   scale_linetype_manual(values = strategy_linetypes) +
   labs(
-    title    = "Effektive Anzahl an Positionen über Zeit",
+    title    = "Effektive Anzahl von Positionen im Zeitverlauf",
     subtitle = "EffN = 1 / HHI; höhere Werte bedeuten bessere Diversifikation",
     x = "Rebalancing-Jahr", y = "Effektive Positionen (1/HHI)",
     caption = "Quelle: Eigene Berechnung."
@@ -624,7 +628,7 @@ p_npos <- ggplot(conc_df, aes(x = Year, y = NumPositions, fill = Strategy)) +
   )
 save_plot(p_npos, "08_Konzentration_AnzPos.png", width = 18, height = 10)
 
-# 7.9 Top-10 Holdings je Strategie (juengstes Rebalancing)
+# 7.9 Top-10-Positionen je Strategie (jüngstes Rebalancing)
 cat("    -> Plot 9: Top-10 Holdings\n")
 top10_df <- bind_rows(lapply(names(top10_list), function(strat) {
   df <- top10_list[[strat]]
@@ -646,7 +650,7 @@ if (nrow(top10_df) > 0) {
     scale_fill_manual(values = strategy_colors, guide = "none") +
     scale_y_continuous(labels = percent_format(accuracy = 1)) +
     labs(
-      title    = "Top-10 Positionen beim letzten Rebalancing",
+      title    = "Top-10-Positionen beim letzten Rebalancing",
       subtitle = paste("Stand:", unique(top10_df$Year)[1]),
       x = NULL, y = "Portfolio-Gewicht",
       caption = "Quelle: Eigene Berechnung."
@@ -654,10 +658,10 @@ if (nrow(top10_df) > 0) {
   save_plot(p_top10, "09_Top10_Holdings.png", width = 20, height = 12)
 }
 
-# 7.10 Schiefe + Semivarianz pro Strategie - ex-post Einordnung des
+# 7.10 Schiefe + Semivarianz pro Strategie - Ex-post-Einordnung des
 #      FOL/FOMO-Profils. Behavioral optimiert die Ratio in-sample aktiv,
 #      Arnott dient als passiver Harvesting-Vergleich.
-cat("    -> Plot 10: Schiefe vs. Semivarianz Scatter\n")
+cat("    -> Plot 10: Schiefe vs. Semivarianz\n")
 metrics_plot_df <- data.frame(
   Strategy = factor(rownames(metrics_full), levels = strategies),
   Skewness = metrics_full$Skewness,
@@ -679,31 +683,32 @@ p_skew_semi <- ggplot(metrics_plot_df,
     title    = "Risiko- und Schiefe-Trade-off: Schiefe vs. Semideviation",
     subtitle = "Ex-post-Profil: aktive FOMO/FOL-Ratio versus Arnott-Harvesting",
     x = "Annualisierte Semideviation (FOL-Risiko)",
-    y = "Schiefe (FOMO-Indikator: hoeher = guenstiger)",
-    caption  = "Quelle: Eigene Berechnung. Behavioral optimiert Skew/SemiDev in-sample; Arnott bildet FOMO passiv ueber 1/N ab."
+    y = "Schiefe (FOMO-Indikator: höher = günstiger)",
+    caption  = "Quelle: Eigene Berechnung. Behavioral optimiert Skew/SemiDev in-sample; Arnott bildet FOMO passiv über 1/N ab."
   )
 save_plot(p_skew_semi, "10_Skew_Semi_Scatter.png", width = 18, height = 12)
 
 # 7.11 Renditeverteilung je Strategie als Density-Plot
-#      Zeigt die GESAMTE Verteilungsform - nicht nur Mittelwert/Std,
-#      sondern wirklich die Tail-Eigenschaften, Schiefe optisch.
+#      Zeigt die gesamte Verteilungsform, nicht nur Mittelwert und
+#      Standardabweichung. Dadurch werden Tail-Eigenschaften und Schiefe sichtbar.
 cat("    -> Plot 11: Renditeverteilungen\n")
 density_long <- returns_long %>%
-  filter(!is.na(Return), abs(Return) < 0.20)  # Extreme Outlier abschneiden für Lesbarkeit
+  filter(!is.na(Return), abs(Return) < 0.20)  # Extreme Ausreißer für Lesbarkeit abschneiden
 
 p_density <- ggplot(density_long, aes(x = Return, fill = Strategy, color = Strategy)) +
   geom_density(alpha = 0.25, linewidth = 0.7) +
   geom_vline(xintercept = 0, color = "grey40", linetype = "dashed") +
   scale_fill_manual(values = strategy_colors) +
   scale_color_manual(values = strategy_colors) +
-  scale_x_continuous(labels = percent_format(accuracy = 1),
-                     limits = c(-0.05, 0.05)) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  coord_cartesian(xlim = c(-0.05, 0.05)) +
   labs(
     title    = "Verteilung der täglichen Renditen",
-    subtitle = "Density-Plot: linker/rechter Schwanz zeigt asymmetrische Renditeverteilung; FOL fokussiert Downside-Risiko",
+    subtitle = "Density-Plot der Tagesrenditen mit Fokus auf Schiefe und Tail-Struktur",
     x = "Tagesrendite", y = "Dichte",
-    caption = "Quelle: Eigene Berechnung. Ausreißer jenseits +-5% für bessere Lesbarkeit ausgeblendet."
-  )
+    caption = "Quelle: Eigene Berechnung. Ausreißer jenseits von ±5 % für bessere Lesbarkeit ausgeblendet."
+  ) +
+  theme(plot.margin = margin(14, 24, 18, 14))
 save_plot(p_density, "11_Renditeverteilungen.png", width = 20, height = 11)
 
 # 7.12 Sharpe vs Sortino Vergleich - klassisch vs Behavioral-adjustiert
@@ -721,12 +726,17 @@ p_ratios <- ggplot(ratio_df, aes(x = Strategy, y = Wert, fill = Ratio)) +
             position = position_dodge(width = 0.8),
             vjust = -0.5, size = 3.2) +
   scale_fill_manual(values = c("Sharpe" = "#34495E", "Sortino" = "#16A085")) +
+  scale_y_continuous(
+    limits = c(0, max(ratio_df$Wert, na.rm = TRUE) * 1.18),
+    expand = expansion(mult = c(0, 0.02))
+  ) +
   labs(
-    title    = "Risikoadjustierte Renditen: Sharpe vs. Sortino Ratio",
-    subtitle = "Sortino-Ratio bewertet nur Downside-Risiko – Behavioral-Strategie sollte hier relativ besser abschneiden",
+    title    = "Risikoadjustierte Renditen: Sharpe- vs. Sortino-Ratio",
+    subtitle = "Die Sortino-Ratio berücksichtigt nur Downside-Risiko und ergänzt damit den Sharpe-Vergleich",
     x = NULL, y = "Ratio (annualisiert)",
     caption = "Quelle: Eigene Berechnung. Sortino verwendet Semideviation statt Standardabweichung im Nenner."
-  )
+  ) +
+  theme(plot.margin = margin(14, 24, 18, 14))
 save_plot(p_ratios, "12_Sharpe_vs_Sortino.png", width = 18, height = 11)
 
 # 7.13 Outperformance gegenüber S&P 500 als Cumulative-Difference-Plot
@@ -755,7 +765,7 @@ if ("SP500_TR" %in% colnames(returns_xts)) {
     labs(
       title    = "Kumulierte Outperformance gegenüber S&P 500 TR",
       subtitle = "Steigend = Strategie schlägt Benchmark, fallend = Underperformance",
-      x = NULL, y = "Kumulierte Excess Return",
+      x = NULL, y = "Kumulierte Überrendite",
       caption = "Quelle: Eigene Berechnung."
     )
   save_plot(p_outperf, "13_Outperformance.png", width = 20, height = 11)
@@ -777,12 +787,22 @@ p_cor <- ggplot(cor_long, aes(x = Strategy_i, y = Strategy_j, fill = Corr)) +
                        name = "Korrelation") +
   labs(
     title    = "Korrelationsmatrix der Strategie-Renditen",
-    subtitle = "Niedrige Korrelation zwischen Strategien deutet auf unterschiedliche Risiko-Renditen-Treiber hin",
+    subtitle = "Rot = ähnliche Performance, Blau = geringere Korrelation",
     x = NULL, y = NULL,
-    caption = "Quelle: Eigene Berechnung. Hohe Korrelation (rot) = ähnliche Performance, niedrige (blau) = differenzierte Strategien."
+    caption = "Quelle: Eigene Berechnung."
   ) +
-  theme(legend.position = "right")
-save_plot(p_cor, "14_Korrelationsmatrix.png", width = 16, height = 12)
+  coord_fixed(clip = "off") +
+  theme(
+    legend.position = "right",
+    plot.title.position = "plot",
+    plot.caption.position = "plot",
+    plot.subtitle = element_text(size = 9, margin = margin(b = 8)),
+    plot.caption = element_text(size = 7, hjust = 0, margin = margin(t = 8)),
+    plot.margin = margin(14, 24, 18, 14),
+    axis.text.x = element_text(margin = margin(t = 6)),
+    axis.text.y = element_text(margin = margin(r = 6))
+  )
+save_plot(p_cor, "14_Korrelationsmatrix.png", width = 18, height = 12)
 
 # 7.15 Performance-Vergleich Krise vs Boom als Bar-Chart
 cat("    -> Plot 15: Krise vs Boom Performance-Bars\n")
@@ -804,39 +824,59 @@ if (!is.null(metrics_crisis) && !is.null(metrics_boom)) {
               size = 3.2, fontface = "bold") +
     facet_wrap(~ Phase, scales = "free_y") +
     scale_fill_manual(values = strategy_colors, guide = "none") +
-    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    scale_y_continuous(
+      labels = percent_format(accuracy = 1),
+      expand = expansion(mult = c(0.18, 0.22))
+    ) +
+    coord_cartesian(clip = "off") +
     labs(
-      title    = "Subperioden-Performance: Krise vs. Boom",
-      subtitle = "Kumulierte Renditen über den jeweiligen Sub-Zeitraum",
+      title    = "Teilperioden-Performance: Krise vs. Boom",
+      subtitle = "Kumulierte Renditen über den jeweiligen Teilzeitraum",
       x = NULL, y = "Kumulierte Rendite",
       caption = "Quelle: Eigene Berechnung."
+    ) +
+    theme(
+      plot.margin = margin(16, 24, 18, 16),
+      strip.text = element_text(margin = margin(t = 6, b = 6))
     )
   save_plot(p_phase_perf, "15_Krise_Boom_Bars.png", width = 22, height = 11)
 }
 
 # 7.16 Sammel-PDF mit allen Charts
 cat("    -> Sammel-PDF\n")
-pdf(COMBINED_PDF, width = 11, height = 7, onefile = TRUE)
-print(p_equity)
-print(p_dd)
-print(p_vol)
-print(p_annual)
-print(p_heat)
-print(p_phases)
-print(p_effn)
-print(p_npos)
-if (exists("p_top10"))      print(p_top10)
-print(p_skew_semi)
-print(p_density)
-print(p_ratios)
-if (exists("p_outperf"))    print(p_outperf)
-print(p_cor)
-if (exists("p_phase_perf")) print(p_phase_perf)
-invisible(dev.off())
+pdf_device_open <- FALSE
+tryCatch({
+  pdf(COMBINED_PDF, width = 11, height = 7, onefile = TRUE)
+  pdf_device_open <- TRUE
+  print(p_equity)
+  print(p_dd)
+  print(p_vol)
+  print(p_annual)
+  print(p_heat)
+  print(p_phases)
+  print(p_effn)
+  print(p_npos)
+  if (exists("p_top10"))      print(p_top10)
+  print(p_skew_semi)
+  print(p_density)
+  print(p_ratios)
+  if (exists("p_outperf"))    print(p_outperf)
+  print(p_cor)
+  if (exists("p_phase_perf")) print(p_phase_perf)
+}, error = function(e) {
+  warning("Sammel-PDF konnte nicht geschrieben werden. ",
+          "Bitte Backtest_Charts.pdf schließen und die Auswertung erneut starten. ",
+          "Die einzelnen PNG-Grafiken wurden bereits erzeugt. Details: ",
+          e$message)
+}, finally = {
+  if (pdf_device_open && grDevices::dev.cur() > 1) {
+    invisible(grDevices::dev.off())
+  }
+})
 
 
 # ==============================================================================
-# 8. PRAESENTATIONSFERTIGE EXCEL-DATEI MIT EINGEBETTETEN GRAFIKEN
+# 8. PRÄSENTATIONSFERTIGE EXCEL-DATEI MIT EINGEBETTETEN GRAFIKEN
 # ==============================================================================
 
 cat("[6/6] Schreibe präsentationsfertige Excel-Datei ...\n")
@@ -894,7 +934,7 @@ style_callout    <- createStyle(textDecoration = "bold",
                                 fontColour = "white",
                                 fgFill = COL_GOOD, halign = "center")
 
-# Sicheres Image-Insert (faellt still aus, falls Datei fehlt)
+# Sicheres Image-Insert (fällt still aus, falls Datei fehlt)
 insertImage_safe <- function(sheet, file, startCol, startRow,
                              width = 22, height = 12) {
   if (file.exists(file)) {
@@ -931,8 +971,8 @@ addStyle(wb, "01_Cover", style_section, rows = 9, cols = 2:8,
 cover_design <- data.frame(
   Aspekt = c("Anlageuniversum", "Backtest-Zeitraum", "Rebalancing",
              "Optimierungsverfahren", "Risikofreier Zinssatz",
-             "Begruendung Behavioral", "Limitation rf", "Benchmark"),
-  Wert = c(paste("S&P 500 Index aus Backtest-Datei.", bt_survivorship),
+             "Begründung Behavioral", "Limitation rf", "Benchmark"),
+  Wert = c(paste("S&P-500-Index aus Backtest-Datei.", bt_survivorship),
            paste(format(start(returns_xts), "%d.%m.%Y"),
                  "bis", format(end(returns_xts), "%d.%m.%Y")),
            "Jährlich (31.12.) im Expanding-Window-Verfahren",
@@ -940,7 +980,7 @@ cover_design <- data.frame(
            paste0(format(RF_ANNUAL*100, nsmall=1), " % p.a."),
            bt_behavioral_reason,
            bt_rf_limitation,
-           "S&P 500 Total Return Index (^SP500TR via Yahoo Finance)"),
+           "S&P-500-Total-Return-Index (^SP500TR via Yahoo Finance)"),
   stringsAsFactors = FALSE
 )
 writeData(wb, "01_Cover", cover_design, startCol = 2, startRow = 11,
@@ -1027,8 +1067,9 @@ addStyle(wb, "02_Executive_Summary", style_section, rows = 5, cols = 2:9,
 mergeCells(wb, "02_Executive_Summary", cols = 2:9, rows = 6:7)
 writeData(wb, "02_Executive_Summary",
           paste("Inwieweit können Behavioral-Finance-Maße wie Fear of Loss",
-                "(Semivarianz) und FOMO/positive Schiefe im",
-                "Portfoliomanagement klassische Risikomaße (Varianz, Beta)",
+                "(Semideviation/Semivarianz) und FOMO/positive Schiefe im",
+                "Portfoliomanagement klassische Risiko-Rendite-Maße",
+                "(Varianz, Volatilität, Sharpe Ratio)",
                 "ersetzen oder ergänzen?"),
           startCol = 2, startRow = 6)
 addStyle(wb, "02_Executive_Summary", style_text, rows = 6:7, cols = 2:9,
@@ -1047,12 +1088,12 @@ m_sub <- metrics_full[strat_no_bench, , drop = FALSE]
 
 summary_metrics <- data.frame(
   Metrik = c("Höchste annualisierte Rendite",
-             "Bestes Sharpe Ratio",
-             "Bestes Sortino Ratio",
+             "Beste Sharpe-Ratio",
+             "Beste Sortino-Ratio",
              "Geringster Maximum Drawdown",
-             "Hoechste Schiefe (OOS-FOMO)",
+             "Höchste Schiefe (OOS-FOMO)",
              "Geringste Semideviation (FOL)",
-             "Bestes Calmar Ratio"),
+             "Beste Calmar-Ratio"),
   Strategie = c(strat_no_bench[which.max(m_sub$AnnReturn)],
                 strat_no_bench[which.max(m_sub$Sharpe)],
                 strat_no_bench[which.max(m_sub$Sortino)],
@@ -1124,7 +1165,7 @@ for (cc in c(5, 6, 8)) {
 #   Col 5 = Sharpe       (höher = besser)
 #   Col 6 = Sortino      (höher = besser)
 #   Col 7 = MaxDD        (niedriger = besser, da Werte POSITIV sind!)
-#   Col 8 = Schiefe      (hoeher = besser als OOS-FOMO-Kennzahl)
+#   Col 8 = Schiefe      (höher = besser als OOS-FOMO-Kennzahl)
 #   Col 9 = CVaR_95      (höher = besser, da Werte negativ sind)
 # Color-Scale: c(min_color, mid_color, max_color)
 #   "höher = besser"  -> c(COL_BAD,  "white", COL_GOOD)
@@ -1147,15 +1188,15 @@ conditionalFormatting(wb, "02_Executive_Summary", cols = 6, rows = cf_row,
                       type = "colourScale",
                       style = c(COL_BAD, "white", COL_GOOD))
 # MaxDD (Col 7): MaxDD ist POSITIV gespeichert (0.35 = 35% Drawdown).
-#   Niedriger = weniger Drawdown = BESSER -> kleiner Wert bekommt gruen!
+#   Niedriger = weniger Drawdown = BESSER -> kleiner Wert bekommt grün!
 conditionalFormatting(wb, "02_Executive_Summary", cols = 7, rows = cf_row,
                       type = "colourScale",
                       style = c(COL_GOOD, "white", COL_BAD))
-# Schiefe (Col 8): hoeher = besser als OOS-FOMO-Kennzahl
+# Schiefe (Col 8): höher = besser als OOS-FOMO-Kennzahl
 conditionalFormatting(wb, "02_Executive_Summary", cols = 8, rows = cf_row,
                       type = "colourScale",
                       style = c(COL_BAD, "white", COL_GOOD))
-# CVaR_95 (Col 9): höher = naeher an 0 = besser (Werte sind negativ!)
+# CVaR_95 (Col 9): höher = näher an 0 = besser (Werte sind negativ!)
 conditionalFormatting(wb, "02_Executive_Summary", cols = 9, rows = cf_row,
                       type = "colourScale",
                       style = c(COL_BAD, "white", COL_GOOD))
@@ -1174,7 +1215,7 @@ addStyle(wb, "02_Executive_Summary", style_section,
 model_setup <- data.frame(
   Aspekt = c("Modell 1", "Modell 2", "Robustheitsmodell", "Modell 3",
              "Gemeinsame Constraints", "Behavioral-/Hybrid-Parameter",
-             "Begruendung Behavioral", "Diskussion Schiefe",
+             "Begründung Behavioral", "Diskussion Schiefe",
              "Limitation rf", "Datenbasis"),
   Wert = c(bt_model1, bt_model2, bt_arnott, bt_model3,
            bt_constraints, bt_behavioral_params,
@@ -1255,7 +1296,7 @@ setColWidths(wb, "03_Wertentwicklung", cols = 1, widths = 3)
 setColWidths(wb, "03_Wertentwicklung", cols = 2, widths = 13)
 setColWidths(wb, "03_Wertentwicklung", cols = 3:(1+ncol(equity_df_excel)),
              widths = 14)
-# kein freezePane: Chart oben + Tabelle unten, freezePane wuerde Layout brechen
+# kein freezePane: Chart oben + Tabelle unten, freezePane würde Layout brechen
 
 
 # ==============================================================================
@@ -1340,14 +1381,14 @@ metric_legend <- data.frame(
                 "Annualisierte Varianz",
                 "Annualisierte Target-Semivarianz (FOL: echte Verluste unter 0)",
                 "Annualisierte Target-Semideviation (Wurzel der Target-Semivarianz)",
-                "Schiefe der Renditeverteilung (OOS-FOMO-Kennzahl; hoeher = guenstiger)",
+                "Schiefe der Renditeverteilung (OOS-FOMO-Kennzahl; höher = günstiger)",
                 "Excess Kurtosis (Tail-Risiko)",
                 "Maximaler Drawdown vom Höchststand",
-                "Value at Risk 95% (täglicher Verlust)",
-                "Conditional VaR 95% (Tail-Erwartungswert)",
-                "Sharpe Ratio: (Rendite - rf) / Volatilität",
-                "Sortino Ratio: (Rendite - rf) / Semideviation",
-                "Calmar Ratio: Rendite / Max Drawdown",
+                "Value-at-Risk 95 % (täglicher Verlust)",
+                "Conditional Value-at-Risk 95 % (Tail-Erwartungswert)",
+                "Sharpe-Ratio: (Rendite - rf) / Volatilität",
+                "Sortino-Ratio: (Rendite - rf) / Semideviation",
+                "Calmar-Ratio: Rendite / Maximum Drawdown",
                 "Anteil Tage mit positiver Rendite",
                 "Beste Tagesrendite", "Schlechteste Tagesrendite"),
   stringsAsFactors = FALSE
@@ -1398,7 +1439,7 @@ for (cc in num_cols_idx) {
 # ACHTUNG: MaxDD ist POSITIV gespeichert (z.B. 0.35 = 35% Drawdown),
 #          daher: kleiner = weniger Drawdown = BESSER!
 # VaR_95, CVaR_95, WorstDay sind NEGATIV (-0.03 etc.),
-#          daher: höher (naeher an 0) = BESSER!
+#          daher: höher (näher an 0) = BESSER!
 cf_row_5 <- (mtab_row + 3):(mtab_row + 2 + nrow(mtab))
 higher_better <- c("AnnReturn", "CumReturn", "Skewness", "Sharpe", "Sortino",
                    "Calmar", "WinRate", "BestDay",
@@ -1438,7 +1479,7 @@ insertImage_safe("05_Metriken_Detail",
 setColWidths(wb, "05_Metriken_Detail", cols = 1, widths = 3)
 setColWidths(wb, "05_Metriken_Detail", cols = 2, widths = 18)
 setColWidths(wb, "05_Metriken_Detail", cols = 3:detail_last_col, widths = 14)
-# kein freezePane noetig: nur 4 Strategie-Zeilen, alles passt auf einen Bildschirm
+# kein freezePane nötig: nur 4 Strategie-Zeilen, alles passt auf einen Bildschirm
 
 
 # ==============================================================================
@@ -1770,7 +1811,7 @@ insertImage_safe("09_Konzentration",
 
 mergeCells(wb, "09_Konzentration", cols = 2:10,
            rows = (chart_start + 28):(chart_start + 28))
-writeData(wb, "09_Konzentration", "ANZAHL AKTIVER POSITIONEN PRO REBAL",
+writeData(wb, "09_Konzentration", "ANZAHL AKTIVER POSITIONEN PRO REBALANCING",
           startCol = 2, startRow = chart_start + 28)
 addStyle(wb, "09_Konzentration", style_section,
          rows = chart_start + 28, cols = 2:10, gridExpand = TRUE)
@@ -1791,7 +1832,7 @@ addWorksheet(wb, "10_Top_Holdings", gridLines = FALSE)
 
 mergeCells(wb, "10_Top_Holdings", cols = 2:10, rows = 2:2)
 writeData(wb, "10_Top_Holdings",
-          "Top-10 Positionen beim letzten Rebalancing",
+          "Top-10-Positionen beim letzten Rebalancing",
           startCol = 2, startRow = 2)
 addStyle(wb, "10_Top_Holdings", style_main_title,
          rows = 2, cols = 2:10, gridExpand = TRUE)
