@@ -1,13 +1,13 @@
 # -*- coding: UTF-8 -*-
 ################################################################################
 #                                                                              #
-#   BACHELORARBEIT: BEHAVIORAL PORTFOLIO OPTIMIZATION                          #
+#   BACHELORARBEIT: Behavioral Finance im Portfoliomanagement                 #
 #   -----------------------------------------------------------------------    #
-#   Vergleich MaxSharpe, Behavioral-FOMO/FOL, Arnott und Hybrid auf S&P 500    #
+#   Vergleich MaxSharpe, Behavioral, Arnott und Hybrid auf S&P 500    #
 #   Backtest: Expanding-Window, Out-of-Sample 2017 - 2026                      #
 #                                                                              #
-#   Autor:   [Dein Name]                                                       #
-#   Datum:   2026-04                                                           #
+#   Autor:   [Yannick Jungbauer]                                               #
+#   Datum:   2026-05                                                           #
 #   R-Ver.:  >= 4.2.0                                                          #
 #                                                                              #
 #   Ausführung:                                                               #
@@ -83,7 +83,7 @@ MAX_WEIGHT <- 0.10
 MIN_ASSETS_FOR_MAX_WEIGHT <- ceiling(1 / MAX_WEIGHT)
 
 # --- Behavioral-Hauptmodell: aktive FOMO/FOL-Ratio ---------------------------
-# Das Behavioral-Modell optimiert beide behavioralen Komponenten gemeinsam:
+# Das Behavioral-Modell optimiert beide verhaltensorientierten Komponenten gemeinsam:
 #
 #   max_w  Skew(w) / SemiDev_0(w)
 #
@@ -248,7 +248,7 @@ print(sapply(constituent_list, length))
 
 ## ---- 3.1 Berechnung diskreter Tagesrenditen ---------------------------------
 # R_t = RI_t / RI_{t-1} - 1
-# Wir nutzen PerformanceAnalytics::Return.calculate als kanonische, robuste
+# Nutzung von PerformanceAnalytics::Return.calculate als kanonische, robuste
 # Implementierung (behandelt NAs automatisch korrekt).
 
 cat("[3/7] Berechne diskrete Tagesrenditen ...\n")
@@ -257,7 +257,7 @@ returns <- Return.calculate(RI, method = "discrete")
 returns <- returns[-1, ]  # erste Zeile ist komplett NA
 
 # Extreme Ausreißer abschneiden (ggf. Fehler in Datastream-Daten)
-# Wir begrenzen einzelne Tagesrenditen auf [-0.5, 2.0]; Werte außerhalb
+# Bengrenzung einzelner Tagesrenditen auf [-0.5, 2.0]; Werte außerhalb
 # werden hier als Datastream-Ausreißer bzw. Datenfehler behandelt.
 returns_clean <- returns
 returns_clean[returns_clean < -0.5] <- NA
@@ -272,15 +272,13 @@ cat("    -> Renditen-Matrix:", nrow(returns_clean), "Tage x", ncol(returns_clean
 #       gültigem Preis enthalten sein.
 #   (b) Ticker muss mindestens MIN_HISTORY_DAYS Handelstage mit Daten vor
 #       dem Rebalancing-Datum haben und im jüngsten Historienfenster höchstens
-#       MAX_NA_SHARE Lueckentage aufweisen.
+#       MAX_NA_SHARE Lückentage aufweisen.
 #
 # SURVIVORSHIP BIAS:
 # In dieser Skriptvariante wird bewusst die Datei S&P_500_Daten.xlsx verwendet.
 # Der Survivorship Bias wird damit NICHT methodisch korrigiert. Die Ergebnisse
 # sind daher als nicht-bias-korrigierter Modellvergleich zu interpretieren.
-# Für eine bias-korrigierte Variante muss DATA_PATH wieder auf
-# S&P_500_Daten_BIAS_KORRIGIERT.xlsx gesetzt und die Methodik entsprechend
-# dokumentiert werden.
+# 
 
 get_universe <- function(rebal_date, returns_mat, constituents_year) {
   # Trainingsfenster = alles vor und inkl. rebal_date
@@ -309,7 +307,7 @@ get_universe <- function(rebal_date, returns_mat, constituents_year) {
 # ==============================================================================
 
 ## ---- 4.1 Hilfsfunktion: bereinigtes Renditepanel für Optimierung ------------
-# WICHTIG: Wir filtern Ticker mit NAs im aktuellen Fenster AUS - nicht Zeilen.
+# WICHTIG: Filtern Ticker mit NAs im aktuellen Fenster aus - nicht Zeilen.
 # Hintergrund: na.omit() auf einer (T x N)-Matrix würde jeden Tag verwerfen,
 # an dem auch nur ein einziger Ticker keinen Wert hat (z. B. Meta vor IPO
 # 2012). Bei mehreren hundert Assets wäre das ein Datenkiller - es bleibt ein
@@ -319,7 +317,7 @@ get_universe <- function(rebal_date, returns_mat, constituents_year) {
 # haben volle Historie. Das Universum schrumpft, die Kovarianz ist aber sauber.
 #
 # Zusätzlich: Ticker mit Null-Varianz (konstante Zeitreihen, z. B. durch
-# Handels-Aussetzung, die als konstanter RI durchging) erzeugen eine singuläre
+# Handelsaussetzung, die als konstanter RI durchging) erzeugen eine singuläre
 # Kovarianzmatrix und bringen quadprog zum Absturz mit dem Fehler
 # "Fehlender Wert, wo TRUE/FALSE nötig ist", weil Solver intern
 # Nicht-Finitheit in der Kovarianzstruktur nicht robust behandeln.
@@ -697,8 +695,8 @@ optimize_behavioral_arnott <- function(R_train_xts, tickers) {
 # FOL-Ankerportfolio für Arnott und als Startwert der Behavioral-Suche.
 # Exakte Portfolio-Target-Semivarianz mit pmin(R %*% w, 0)^2 ist ein
 # quadratisches Programm mit vielen Hilfsvariablen. Für ein robustes und
-# schnelles Bachelorarbeits-Setup nutzen wir die übliche Downside-
-# Semicovariance-Näherung: positive Asset-Renditen werden auf 0 gesetzt,
+# schnelles Bachelorarbeits-Setup wird die übliche Downside-
+# Semicovariance-Näherung genützt: positive Asset-Renditen werden auf 0 gesetzt,
 # daraus wird eine Downside-Momentmatrix gebildet und per quadprog minimiert.
 optimize_min_semicov <- function(R_train_xts, tickers) {
   pr           <- prep_returns(R_train_xts, tickers)
@@ -740,7 +738,7 @@ optimize_min_semicov <- function(R_train_xts, tickers) {
 
 ## ---- 4.2 Modell 1: Maximum Sharpe Ratio (Mean-Variance) via quadprog --------
 # Max Sharpe ist ein Fractional QP und nicht direkt in solve.QP einsetzbar.
-# Standard-Transformation (siehe Cornuejols/Tuetuencue 2007, Kapitel 8.3):
+# Standard-Transformation (siehe Cornuejols/Tuetuencue 2007):
 #
 #   Substitution y = k*w mit k = 1 / (mu'w - r_f)  (k > 0 angenommen)
 #   Dann löst das äquivalente QP:
@@ -996,15 +994,14 @@ for (i in seq_along(rebal_dates)) {
   
   # --- OOS-Renditen (statische Zielgewichte; täglich auf Zielgewichte rebalanciert) ---
   # Mathematisch entspricht as.matrix(R_oos) %*% w einer täglich
-  # rebalancierten Strategie mit konstanten Zielgewichten. Es ist keine
+  # neugewichteten Strategie mit konstanten Zielgewichten. Es ist keine
   # Strategie mit driftenden Einzeltitelgewichten.
   R_oos <- returns_clean[index(returns_clean) > rd & index(returns_clean) <= holding_end, uni]
   #
   # DELISTING-/NA-BEHANDLUNG:
   # Wenn ein Ticker während der OOS-Periode delistet wird (Pleite, Übernahme),
   # bricht die RI-Reihe ab und es kommen NAs. Die korrekte ökonomische
-  # Behandlung hängt vom Grund ab, ist aber in Ermangelung von Detail-
-  # informationen folgendermaßen approximiert:
+  # Behandlung hängt vom Grund ab, ist aber folgendermaßen approximiert:
   #
   # 1) Letzte verfügbare Rendite vor dem Abbruch -> Total-Loss-Tag (-100 %)
   #    annehmen, wenn der RI plausibel "abrupt" endet (Pleite-Annahme).
@@ -1016,7 +1013,7 @@ for (i in seq_along(rebal_dates)) {
   # Survivorship Bias insgesamt NICHT korrigiert; diese Regel behandelt nur
   # NAs innerhalb einer OOS-Haltedauer, falls sie in der Datei auftreten.
   #
-  # Hinweis: Falls dein LSEG-Datensatz für Übernahmen/Mergers den letzten
+  # Hinweis: Falls der LSEG-Datensatz für Übernahmen/Mergers den letzten
   # RI-Wert ökonomisch korrekt enthält (Übernahmepreis), überschätzt
   # dieser Mechanismus den Verlust geringfügig. Für eine reine Pleite-
   # Annahme ist er korrekt.
@@ -1276,10 +1273,10 @@ readme_text <- data.frame(
     paste(OOS_START, "bis", OOS_END),
     paste0("Jährlich, ", paste(REBAL_YEARS, collapse = ", ")),
     "S&P 500 Total Return (Yahoo, ^SP500TR)",
-    "Modell 1 (Mean-Variance / Max Sharpe, Tangency, quadprog)",
-    "Modell 2 (Behavioral aktiv: max Skew(w) / SemiDev_0(w); FOMO/FOL-Ratio)",
-    "Arnott-Blend (Robustheit: FOL-MinSemiCov + FOMO-1/N-Marktproxy mit zeitvariablem alpha)",
-    paste0("Modell 3 (Hybrid-Blend: ", 100*HYBRID_ALPHA,
+    "(Mean-Variance / Max Sharpe, Tangency, quadprog)",
+    "(Behavioral aktiv: max Skew(w) / SemiDev_0(w); FOMO/FOL-Ratio)",
+    "(Robustheit: FOL-MinSemiCov + FOMO-1/N-Marktproxy mit zeitvariablem alpha)",
+    paste0("(Hybrid-Blend: ", 100*HYBRID_ALPHA,
            "% MaxSharpe + ", 100*(1-HYBRID_ALPHA),
            "% Behavioral-FOMO/FOL)"),
     paste0("long-only, voll investiert, max. ", 100*MAX_WEIGHT,
@@ -1309,8 +1306,8 @@ readme_text <- data.frame(
            100*MAX_NA_SHARE, "% NAs"),
     paste0(100*RF_ANNUAL, "%"),
     paste0("Konstanter risikofreier Zinssatz von ", 100*RF_ANNUAL,
-           "% p.a. über 2017-2026; bewusste Vereinfachung, in der Interpretation/Limitations zu nennen."),
-    "Nicht korrigiert: Es wird S&P_500_Daten.xlsx verwendet; Survivorship Bias wird bewusst außer Acht gelassen."
+           "% p.a. über 2017-2026; bewusste Vereinfachung"),
+    "Nicht korrigiert: Survivorship Bias wird bewusst außer Acht gelassen."
   ),
   stringsAsFactors = FALSE
 )
@@ -1370,7 +1367,7 @@ cat("\nFERTIG. Ergebnisdatei:", normalizePath(OUTPUT_PATH, mustWork = FALSE), "\
 ################################################################################
 #  ANMERKUNGEN FÜR DIE BACHELORARBEIT                                          #
 #  -----------------------------------------------------------------------     #
-#  * Modell 2 optimiert beide behavioralen Komponenten aktiv:                  #
+#  * Behavioral optimiert beide verhaltensorientierten Komponenten aktiv:     #
 #    Fear of Missing Out wird als korrigierte Portfolio-Schiefe gemessen,      #
 #    Fear of Loss als annualisierte Semideviation echter Verluste unter 0.     #
 #    Die Zielfunktion max Skew(w)/SemiDev_0(w) bedeutet: positive Schiefe pro  #
@@ -1383,29 +1380,27 @@ cat("\nFERTIG. Ergebnisdatei:", normalizePath(OUTPUT_PATH, mustWork = FALSE), "\
 #  * Die direkte Sample-Schiefe-Optimierung bleibt schätzsensitiv,             #
 #    tail-getrieben und nicht-konvex. Genau deshalb wird der Arnott-Blend als  #
 #    zusätzliches Robustheitsmodell beibehalten: aktive FOMO/FOL-Optimierung   #
-#    versus passives Schiefe-Harvesting über ein 1/N-Marktbein.                #
+#    versus passives Schiefe-Harvesting über 1/N.                              #
 #                                                                              #
 #  * Ein konzentrierteres Behavioral-Portfolio und schwächere Krisenperformance #
 #    gegenüber Arnott wären erwartete Trade-offs, keine Codefehler. Diese      #
 #    Befunde gehören in die Diskussion der Frage "ersetzen oder ergänzen".     #
 #                                                                              #
-#  * Modell 3 ist ein transparenter Hybrid-Blend aus MaxSharpe und aktivem     #
+#  * Der Hybrid ist ein transparenter Blend aus MaxSharpe und aktivem          #
 #    Behavioral. Dadurch ist klar erkennbar, was durch die Behavioral-         #
 #    Komponente ergänzt wird, ohne weitere Präferenzparameter einzuführen.     #
 #                                                                              #
-#  * Die Box-Constraint max=0.10 je Titel gilt für ALLE Modellportfolios.      #
+#  * Die Box-Constraint max=0.10 je Titel gilt für alle Modellportfolios.      #
 #    Dadurch werden MaxSharpe, Behavioral, Arnott und Hybrid unter identischen #
 #    Anlagebedingungen verglichen.                                             #
 #                                                                              #
-#  * Die Sortino-Kennzahl nutzt annualisierte Target-Semivarianz unter 0. Eine #
+#  * Die Sortino Ratio nutzt annualisierte Target-Semivarianz unter 0. Eine    #
 #    alternative Spezifikation mit MAR = rf ist schnell implementiert          #
-#    (SortinoRatio aus PerformanceAnalytics).                                  #
+#    (Sortino Ratio aus PerformanceAnalytics).                                #
 #                                                                              #
 #  * Die Corona-Phase wird bewusst breiter als 02/19-03/23/2020 definiert      #
 #    (02/2020-06/2020). Damit beruhen Schiefe und CVaR auf mehr Beobachtungen  #
 #    und sind statistisch besser interpretierbar als im reinen Crash-Tief.     #
 #                                                                              #
-#  * Der risikofreie Zinssatz ist konstant mit 2 % p.a. angesetzt. Das ist     #
-#    eine bewusste Vereinfachung und muss im Limitationen-Abschnitt der        #
-#    Arbeit genannt werden.                                                    #
+#  * Der risikofreie Zinssatz ist konstant mit 2 % p.a. angesetzt.                                                    #
 ################################################################################
