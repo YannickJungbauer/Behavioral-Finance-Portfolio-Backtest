@@ -278,8 +278,7 @@ Konzentrationsanalyse, Top-Holdings, Chart-Galerie und Gewichtungsmatrizen.
   Tail-Beobachtungen und nicht-konvex.
 - Die Corona-Stressphase wird bewusst breiter als der reine Crash-Zeitraum
   definiert: 01.02.2020 bis 30.06.2020.
-- Ein möglicher Survivorship Bias wird nicht vollständig korrigiert, da die
-  Datei `S&P_500_Daten.xlsx` als Datengrundlage verwendet wird.
+- Ein möglicher Survivorship Bias wird nicht korrigiert.
   
 ## Reproduzierbarkeit
 
