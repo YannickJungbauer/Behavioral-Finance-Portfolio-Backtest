@@ -54,13 +54,13 @@ RF_DAILY  <- (1 + RF_ANNUAL)^(1/252) - 1
 # 2. AKADEMISCHES PLOT-THEMA & FARBPALETTE
 # ==============================================================================
 
-# Konsistente, dezente Palette - schwarz-weiß-tauglich durch Linientypen-Mix
+
 strategy_colors <- c(
-  "MaxSharpe"  = "#2C3E50",  # dunkelblau (Mean-Variance)
-  "Behavioral" = "#C0392B",  # rot (aktive FOMO/FOL-Ratio)
-  "Arnott"     = "#D68910",  # orange (Robustheitsmodell)
-  "Hybrid"     = "#8E44AD",  # violett (Sharpe + Behavioral)
-  "SP500_TR"   = "#27AE60"   # grün (Benchmark)
+  "MaxSharpe"  = "#2C3E50",  # dunkelblau 
+  "Behavioral" = "#C0392B",  # rot 
+  "Arnott"     = "#D68910",  # orange 
+  "Hybrid"     = "#8E44AD",  # violett 
+  "SP500_TR"   = "#27AE60"   # grün 
 )
 strategy_linetypes <- c(
   "MaxSharpe"  = "solid",
@@ -147,20 +147,20 @@ get_readme_value <- function(key, fallback = "") {
 }
 
 bt_model1 <- get_readme_value(
-  "Modell 1",
-  "Modell 1 (Mean-Variance / Max Sharpe, Tangency, quadprog)"
+  "MaxSharpe",
+  "(Mean-Variance / Max Sharpe, Tangency, quadprog)"
 )
 bt_model2 <- get_readme_value(
-  "Modell 2",
-  "Modell 2 (Behavioral aktiv: max Skew(w) / SemiDev_0(w); FOMO/FOL-Ratio)"
+  "Behavioral",
+  "(Behavioral aktiv: max Skew(w) / SemiDev_0(w); FOMO/FOL-Ratio)"
 )
 bt_arnott <- get_readme_value(
-  "Robustheitsmodell",
-  "Arnott-Blend (Robustheit: FOL-MinSemiCov + FOMO-1/N-Marktproxy mit zeitvariablem alpha)"
+  "Arnott",
+  "(Robustheit: FOL-MinSemiCov + FOMO-1/N-Marktproxy mit zeitvariablem alpha)"
 )
 bt_model3 <- get_readme_value(
-  "Modell 3",
-  "Modell 3 (Hybrid-Blend aus MaxSharpe und Behavioral-FOMO/FOL)"
+  "Hybrid",
+  "(Hybrid-Blend aus MaxSharpe und Behavioral-FOMO/FOL)"
 )
 bt_constraints <- get_readme_value(
   "Gemeinsame Constraints",
@@ -513,12 +513,7 @@ heatmap_metrics <- c("AnnReturn", "AnnVol", "Sharpe", "Sortino",
                      "MaxDD", "CVaR_95", "Skewness", "Calmar")
 m_sub <- metrics_full[, heatmap_metrics, drop = FALSE]
 m_z <- scale(m_sub)
-# Vorzeichen umdrehen für "schlecht-ist-hoch"-Metriken.
-# MaxDD ist hier ein positiver Verlustbetrag. Skewness bleibt als
-# OOS-FOMO-Kennzahl "höher = besser". Im Behavioral-Hauptmodell ist
-# Schiefe Teil der In-Sample-Zielfunktion; im Arnott-Modell wird sie passiv
-# über das Marktbein erfasst. CVaR_95 ist negativ und bleibt
-# unverändert, weil ein höherer Wert (= näher an 0) besser ist.
+
 neg_metrics <- c("AnnVol", "MaxDD")
 m_z[, neg_metrics] <- -m_z[, neg_metrics]
 
@@ -951,7 +946,7 @@ insertImage_safe <- function(sheet, file, startCol, startRow,
 addWorksheet(wb, "01_Cover", gridLines = FALSE, tabColour = COL_DARK)
 
 mergeCells(wb, "01_Cover", cols = 2:8, rows = 3:5)
-writeData(wb, "01_Cover", "Behavioral Portfolio Optimization",
+writeData(wb, "01_Cover", "Behavioral Finance im Portfoliomanagement",
           startCol = 2, startRow = 3)
 addStyle(wb, "01_Cover", style_main_title, rows = 3:5, cols = 2:8,
          gridExpand = TRUE)
@@ -1011,7 +1006,7 @@ strategies_explained <- data.frame(
                    "S&P-500-Total-Return-Tagesrendite als Benchmark-Serie"),
   Theoretische_Grundlage = c("Rationaler Investor (Markowitz, Sharpe)",
                              "Positive Schiefe pro Einheit Downside-Risiko",
-                             "Passives Schiefe-Harvesting nach Arnott/McQuarrie",
+                             "Passives Schiefe-Harvesting",
                              "Erweiterte Präferenzen mit beiden Komponenten",
                              "Index-Benchmark als Tagesrendite-Serie; keine driftenden Einzeltitelgewichte"),
   stringsAsFactors = FALSE
@@ -1066,11 +1061,8 @@ addStyle(wb, "02_Executive_Summary", style_section, rows = 5, cols = 2:9,
 
 mergeCells(wb, "02_Executive_Summary", cols = 2:9, rows = 6:7)
 writeData(wb, "02_Executive_Summary",
-          paste("Inwieweit können Behavioral-Finance-Maße wie Fear of Loss",
-                "(Semideviation/Semivarianz) und FOMO/positive Schiefe im",
-                "Portfoliomanagement klassische Risiko-Rendite-Maße",
-                "(Varianz, Volatilität, Sharpe Ratio)",
-                "ersetzen oder ergänzen?"),
+          paste("Inwieweit können Behavioral-Finance-Maße wie Fear of Loss (Semivarianz) und Fear of Missing Out (Schiefe) im Portfoliomanagement 
+klassische Risikomaße (Varianz, Beta) ersetzen oder ergänzen?"),
           startCol = 2, startRow = 6)
 addStyle(wb, "02_Executive_Summary", style_text, rows = 6:7, cols = 2:9,
          gridExpand = TRUE)
@@ -1091,7 +1083,7 @@ summary_metrics <- data.frame(
              "Beste Sharpe-Ratio",
              "Beste Sortino-Ratio",
              "Geringster Maximum Drawdown",
-             "Höchste Schiefe (OOS-FOMO)",
+             "Höchste Schiefe (FOMO)",
              "Geringste Semideviation (FOL)",
              "Beste Calmar-Ratio"),
   Strategie = c(strat_no_bench[which.max(m_sub$AnnReturn)],
@@ -1160,13 +1152,13 @@ for (cc in c(5, 6, 8)) {
            cols = cc, gridExpand = TRUE)
 }
 # Spalten-Bedeutung in key_metrics:
-#   Col 3 = Rendite      (höher = besser)
-#   Col 4 = Volatilität (niedriger = besser)
-#   Col 5 = Sharpe       (höher = besser)
-#   Col 6 = Sortino      (höher = besser)
-#   Col 7 = MaxDD        (niedriger = besser, da Werte POSITIV sind!)
-#   Col 8 = Schiefe      (höher = besser als OOS-FOMO-Kennzahl)
-#   Col 9 = CVaR_95      (höher = besser, da Werte negativ sind)
+#   Col 3 = Rendite      
+#   Col 4 = Volatilität 
+#   Col 5 = Sharpe       
+#   Col 6 = Sortino      
+#   Col 7 = MaxDD        
+#   Col 8 = Schiefe      
+#   Col 9 = CVaR_95      
 # Color-Scale: c(min_color, mid_color, max_color)
 #   "höher = besser"  -> c(COL_BAD,  "white", COL_GOOD)
 #   "niedriger = besser" -> c(COL_GOOD, "white", COL_BAD)
@@ -1213,7 +1205,7 @@ addStyle(wb, "02_Executive_Summary", style_section,
          rows = model_setup_row, cols = 2:9, gridExpand = TRUE)
 
 model_setup <- data.frame(
-  Aspekt = c("Modell 1", "Modell 2", "Robustheitsmodell", "Modell 3",
+  Aspekt = c("MaxSharpe", "Behavioral", "Arnott", "Hybrid",
              "Gemeinsame Constraints", "Behavioral-/Hybrid-Parameter",
              "Begründung Behavioral", "Diskussion Schiefe",
              "Limitation rf", "Datenbasis"),
@@ -1433,13 +1425,8 @@ for (cc in num_cols_idx) {
            rows = (mtab_row + 3):(mtab_row + 2 + nrow(mtab)),
            cols = 1 + cc, gridExpand = TRUE)
 }
-# Color-Scales für alle wichtigen Metriken setzen
-# Höher = besser:  AnnReturn, CumReturn, Skewness, Sharpe, Sortino, Calmar, WinRate
-# Niedriger = besser: AnnVol, AnnVar, AnnSemiVar, AnnSemiDev, ExcessKurt, MaxDD
-# ACHTUNG: MaxDD ist POSITIV gespeichert (z.B. 0.35 = 35% Drawdown),
-#          daher: kleiner = weniger Drawdown = BESSER!
-# VaR_95, CVaR_95, WorstDay sind NEGATIV (-0.03 etc.),
-#          daher: höher (näher an 0) = BESSER!
+
+
 cf_row_5 <- (mtab_row + 3):(mtab_row + 2 + nrow(mtab))
 higher_better <- c("AnnReturn", "CumReturn", "Skewness", "Sharpe", "Sortino",
                    "Calmar", "WinRate", "BestDay",
